@@ -3,31 +3,115 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* "Scrubs & sage": clean cool-white paper, surgical-green ink, an emerald accent.
+       Space-separated RGB so Tailwind opacity modifiers work (see tailwind.config.ts). */
+    --paper: 244 246 242;
+    --paper-deep: 232 237 230;
+    --card: 251 252 250;
+    --rule: 213 221 212; /* hairlines */
+    --rule-strong: 178 192 177;
+    --ink: 23 38 31; /* green-black text */
+    --ink-soft: 75 91 83;
+    --ink-faint: 112 126 118;
+    --pine: 30 65 54; /* scrubs green: primary actions */
+    --pine-deep: 20 46 38; /* chart cover */
+    --accent: 36 119 90; /* emerald: margin rule, active state, focus */
+    --accent-soft: 220 238 229;
+    --mint: 151 214 184; /* accent on the dark cover */
+    --danger: 178 58 48; /* errors only */
+    --danger-soft: 246 225 222;
+
+    color-scheme: light;
+  }
+
+  html {
+    @apply bg-paper;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply min-h-screen bg-paper font-sans text-ink antialiased;
+    /* Fine paper grain: an inline SVG noise tile, too subtle to affect legibility. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.09 0 0 0 0 0.15 0 0 0 0 0.12 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  ::selection {
+    @apply bg-accent/20 text-ink;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-paper;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 @layer components {
   /* Centered page container with responsive gutters. */
   .container-page {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-10;
+  }
+
+  /* Small uppercase mono label, like a field caption printed on a chart. */
+  .eyebrow {
+    @apply font-mono text-[0.6875rem] font-medium uppercase tracking-label text-ink-faint;
+  }
+
+  .page-title {
+    @apply font-display text-[2.25rem] leading-[1.05] tracking-tight text-ink sm:text-5xl;
+  }
+
+  /* A sheet of chart paper with the margin rule down its left edge. */
+  .sheet {
+    @apply relative rounded-sm bg-card shadow-sheet ring-1 ring-rule;
+  }
+
+  .sheet-margin::before {
+    content: '';
+    @apply absolute inset-y-0 left-6 w-px origin-top animate-draw-rule bg-accent/60 sm:left-8;
+  }
+
+  /* ICD-10 code, set like a rubber stamp. */
+  .code-stamp {
+    @apply inline-flex items-center rounded-[3px] border border-ink/70 px-1.5 py-0.5 font-mono text-xs font-medium tracking-wide text-ink;
   }
 
   .form-label {
-    @apply block text-sm font-medium text-slate-700;
+    @apply eyebrow block text-ink-soft;
   }
 
   /* text-base (16px) on every screen: smaller text makes iOS Safari zoom in on focus. */
   .form-input {
-    @apply mt-1 block min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:bg-slate-100 aria-[invalid=true]:border-red-400 aria-[invalid=true]:focus:ring-red-500/30;
+    @apply mt-2 block min-h-11 w-full rounded-none border-0 border-b-2 border-rule-strong bg-transparent px-0 py-2 text-base text-ink transition-colors placeholder:text-ink-faint/70 focus:border-ink focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-60 aria-[invalid=true]:border-danger;
   }
 
   .form-error {
-    @apply mt-1 text-sm text-red-600;
+    @apply mt-1.5 flex items-center gap-1.5 text-sm text-danger;
+  }
+
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-sm px-5 py-2 text-[0.9375rem] font-semibold tracking-wide transition disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn-primary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand-600 px-4 py-2 font-medium text-white shadow-sm hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply btn bg-pine text-paper shadow-[0_1px_0_rgb(var(--pine-deep))] hover:bg-pine-deep active:translate-y-px;
+  }
+
+  .btn-quiet {
+    @apply btn px-3 font-medium text-ink-soft hover:bg-ink/5 hover:text-ink;
+  }
+
+  /* Staggered page-load reveal: add `reveal` plus an optional `[--d:120ms]` delay. */
+  .reveal {
+    @apply animate-rise;
+    animation-delay: var(--d, 0ms);
   }
 }

@@ -1,11 +1,18 @@
-import colors from 'tailwindcss/colors'
-
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-01',
   devtools: { enabled: true },
 
   modules: ['@nuxtjs/tailwindcss'],
+
+  // Self-hosted fonts: no request to a third-party font CDN.
+  css: [
+    '@fontsource/instrument-serif/400.css',
+    '@fontsource/instrument-serif/400-italic.css',
+    '@fontsource-variable/hanken-grotesk/wght.css',
+    '@fontsource/ibm-plex-mono/400.css',
+    '@fontsource/ibm-plex-mono/500.css',
+  ],
 
   typescript: {
     strict: true,
@@ -26,7 +33,8 @@ export default defineNuxtConfig({
         // viewport-fit=cover lets the layout pad for notches with env(safe-area-inset-*).
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { name: 'description', content: 'Record consultation notes with ICD-10 diagnosis codes.' },
-        { name: 'theme-color', content: colors.teal[700] },
+        // --paper, so the mobile browser chrome blends into the page.
+        { name: 'theme-color', content: '#f4f6f2' },
       ],
     },
   },

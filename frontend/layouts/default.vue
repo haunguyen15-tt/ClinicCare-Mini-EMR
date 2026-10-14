@@ -1,8 +1,11 @@
 <template>
-  <div class="flex min-h-screen flex-col">
+  <!-- One column on phones and tablets (AppNav is a top bar); sidebar + content from lg up. -->
+  <div class="min-h-screen lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)]">
     <AppNav />
-    <main class="container-page flex-1 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:py-8">
-      <slot />
+    <main class="min-w-0 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-8 sm:pt-10 lg:pt-14">
+      <div class="container-page">
+        <slot />
+      </div>
     </main>
   </div>
 </template>
