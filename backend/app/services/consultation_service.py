@@ -1,12 +1,11 @@
 from collections.abc import Sequence
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
 from app.core.errors import BadRequestError, NotFoundError
 from app.models import Consultation, DiagnosisCode
 from app.schemas.consultation import ConsultationCreate
-from app.services.query_utils import LIKE_ESCAPE, escape_like
 
 
 def create_consultation(db: Session, data: ConsultationCreate) -> Consultation:
@@ -28,7 +27,6 @@ def create_consultation(db: Session, data: ConsultationCreate) -> Consultation:
     )
     db.add(consultation)
     db.commit()
-    db.refresh(consultation)
     return consultation
 
 
@@ -45,22 +43,17 @@ def list_consultations(
     ``diagnosis`` matches a code exactly or by prefix, so ``E11`` finds every E11.x note.
     """
     filters = []
-    if patient := (patient or "").strip():
+    if patient:
+        filters.append(Consultation.patient_name.icontains(patient, autoescape=True))
+    if diagnosis:
         filters.append(
-            Consultation.patient_name.ilike(f"%{escape_like(patient)}%", escape=LIKE_ESCAPE)
-        )
-    if diagnosis := (diagnosis or "").strip().upper():
-        filters.append(
-            Consultation.diagnoses.any(
-                DiagnosisCode.code.like(f"{escape_like(diagnosis)}%", escape=LIKE_ESCAPE)
-            )
+            Consultation.diagnoses.any(DiagnosisCode.code.startswith(diagnosis, autoescape=True))
         )
 
     total = db.scalar(select(func.count()).select_from(Consultation).where(*filters)) or 0
     items = db.scalars(
         select(Consultation)
         .where(*filters)
-        .options(selectinload(Consultation.diagnoses))
         .order_by(Consultation.consultation_date.desc(), Consultation.id.desc())
         .offset(skip)
         .limit(limit)
@@ -69,9 +62,7 @@ def list_consultations(
 
 
 def get_consultation(db: Session, consultation_id: int) -> Consultation:
-    consultation = db.get(
-        Consultation, consultation_id, options=[selectinload(Consultation.diagnoses)]
-    )
+    consultation = db.get(Consultation, consultation_id)
     if consultation is None:
         raise NotFoundError("Consultation not found")
     return consultation

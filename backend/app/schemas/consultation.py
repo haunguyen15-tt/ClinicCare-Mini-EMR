@@ -1,5 +1,5 @@
 import re
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import Annotated
 
 from pydantic import (
@@ -25,14 +25,6 @@ def _normalize_code(value: str) -> str:
 
 
 DiagnosisCodeStr = Annotated[str, AfterValidator(_normalize_code)]
-
-
-def _assume_utc(value: datetime) -> datetime:
-    # SQLite drops the timezone on the way back, but every stored timestamp is UTC.
-    return value if value.tzinfo else value.replace(tzinfo=UTC)
-
-
-UTCDateTime = Annotated[datetime, AfterValidator(_assume_utc)]
 
 
 class ConsultationCreate(BaseModel):
@@ -65,9 +57,9 @@ class ConsultationRead(BaseModel):
     patient_name: str
     patient_dob: date | None
     notes: str
-    consultation_date: UTCDateTime
+    consultation_date: datetime
     doctor_id: int | None
-    created_at: UTCDateTime
+    created_at: datetime
     diagnoses: list[DiagnosisRead]
 
 

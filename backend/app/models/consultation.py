@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, Date, DateTime, ForeignKey, String, Table, Text
+from sqlalchemy import Column, Date, ForeignKey, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, utcnow
@@ -37,17 +37,15 @@ class Consultation(Base):
     patient_name: Mapped[str] = mapped_column(String(100))
     patient_dob: Mapped[date | None] = mapped_column(Date)
     notes: Mapped[str] = mapped_column(Text)
-    consultation_date: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=utcnow, index=True
-    )
+    consultation_date: Mapped[datetime] = mapped_column(default=utcnow, index=True)
     doctor_id: Mapped[int | None] = mapped_column(
         ForeignKey("doctors.id", ondelete="SET NULL"), index=True
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     doctor: Mapped[Doctor | None] = relationship(back_populates="consultations")
     diagnoses: Mapped[list[DiagnosisCode]] = relationship(
-        secondary=consultation_diagnoses, order_by="DiagnosisCode.code"
+        secondary=consultation_diagnoses, order_by="DiagnosisCode.code", lazy="selectin"
     )
 
     def __repr__(self) -> str:
