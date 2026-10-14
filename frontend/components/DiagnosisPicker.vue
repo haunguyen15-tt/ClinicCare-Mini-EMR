@@ -3,7 +3,8 @@ import type { Diagnosis } from '~/types/api'
 
 // ICD-10 autocomplete over GET /diagnosis, following the WAI-ARIA combobox pattern.
 // `v-model` is the list of selected codes. With `multiple` (the default) codes collect as
-// removable chips; without it a pick replaces the current code.
+// removable chips; without it a pick replaces the current code. With `allowPrefix`, typing
+// something shaped like a code (e.g. "E11") also offers that prefix itself, to match a whole group.
 const props = withDefaults(
   defineProps<{
     modelValue: string[]
@@ -16,6 +17,7 @@ const props = withDefaults(
     /** id of an element describing the field, such as its error message. */
     describedby?: string
     placeholder?: string
+    allowPrefix?: boolean
   }>(),
   {
     multiple: true,
@@ -24,6 +26,7 @@ const props = withDefaults(
     invalid: false,
     describedby: undefined,
     placeholder: 'e.g. E11 or asthma',
+    allowPrefix: false,
   },
 )
 
@@ -46,6 +49,22 @@ const searchError = ref<string | null>(null)
 const open = ref(false)
 const activeIndex = ref(-1)
 
+// A letter, a digit, then up to the rest of an ICD-10 code: "E1", "E11", "E11.6".
+const CODE_PREFIX = /^[A-Z][0-9][0-9A-Z]?(\.[0-9A-Z]{0,4})?$/
+const prefixLabel = (prefix: string) => `Any code starting with ${prefix}`
+
+interface Option extends Diagnosis {
+  prefix: boolean
+}
+
+// The search results, after the typed prefix when that is offered (and is not itself a code).
+const options = computed<Option[]>(() => {
+  const term = search.value.toUpperCase()
+  const offerPrefix = props.allowPrefix && CODE_PREFIX.test(term) && !results.value.some((d) => d.code === term)
+  const prefix = offerPrefix ? [{ code: term, description: prefixLabel(term), prefix: true }] : []
+  return [...prefix, ...results.value.map((diagnosis) => ({ ...diagnosis, prefix: false }))]
+})
+
 const showList = computed(() => open.value && query.value.trim() !== '')
 // True from the first keystroke until the matching response arrives.
 const pending = computed(() => query.value.trim() !== search.value || loading.value)
@@ -56,8 +75,8 @@ const status = computed(() => {
   if (!showList.value) return ''
   if (pending.value) return 'Searching…'
   if (searchError.value) return searchError.value
-  if (!results.value.length) return `No codes match “${search.value}”.`
-  return `${plural(results.value.length, 'code')} found. Use the arrow keys to choose.`
+  if (!options.value.length) return `No codes match “${search.value}”.`
+  return `${plural(options.value.length, 'option')} found. Use the arrow keys to choose.`
 })
 
 // Descriptions for the chips: kept from search results, and looked up for codes that
@@ -103,6 +122,7 @@ watch(
         // An exact code match always ranks first.
         const [match] = await api<Diagnosis[]>('/diagnosis', { query: { search: code, limit: 1 } })
         if (match?.code === code) descriptions.set(code, match.description)
+        else if (props.allowPrefix && CODE_PREFIX.test(code)) descriptions.set(code, prefixLabel(code))
       } catch {
         // The chip just shows the code.
       }
@@ -113,7 +133,8 @@ watch(
 
 const isSelected = (code: string) => props.modelValue.includes(code)
 
-function choose(diagnosis: Diagnosis) {
+function choose(diagnosis: Option) {
+  if (atMax.value && !isSelected(diagnosis.code)) return
   descriptions.set(diagnosis.code, diagnosis.description)
   if (!props.multiple) {
     emit('update:modelValue', [diagnosis.code])
@@ -123,7 +144,7 @@ function choose(diagnosis: Diagnosis) {
   }
   // The list stays open with the same results, so several related codes can be picked in a row.
   if (isSelected(diagnosis.code)) emit('update:modelValue', props.modelValue.filter((code) => code !== diagnosis.code))
-  else if (!atMax.value) emit('update:modelValue', [...props.modelValue, diagnosis.code])
+  else emit('update:modelValue', [...props.modelValue, diagnosis.code])
 }
 
 function remove(code: string) {
@@ -133,7 +154,7 @@ function remove(code: string) {
 
 function move(step: 1 | -1) {
   open.value = true
-  const count = results.value.length
+  const count = options.value.length
   if (!count) return
   // From "nothing active", Down goes to the first option and Up to the last.
   activeIndex.value = activeIndex.value < 0 ? (step > 0 ? 0 : count - 1) : (activeIndex.value + step + count) % count
@@ -151,8 +172,8 @@ function onKeydown(event: KeyboardEvent) {
       // Enter picks a code instead of submitting the surrounding form while a search is typed.
       if (!query.value.trim()) return
       event.preventDefault()
-      const diagnosis = results.value[Math.max(activeIndex.value, 0)]
-      if (showList.value && !pending.value && diagnosis) choose(diagnosis)
+      const option = options.value[Math.max(activeIndex.value, 0)]
+      if (showList.value && !pending.value && option) choose(option)
       break
     }
     case 'Escape':
@@ -185,10 +206,10 @@ function onFocus() {
   }
 }
 
-// Splits `text` around the searched words so they can be highlighted.
-function highlight(text: string) {
+// Splits an option's description around the searched words so they can be highlighted.
+function highlight({ description: text, prefix }: Option) {
   const term = search.value.toLowerCase()
-  const start = term ? text.toLowerCase().indexOf(term) : -1
+  const start = term && !prefix ? text.toLowerCase().indexOf(term) : -1
   if (start < 0) return [{ text, match: false }]
   const end = start + term.length
   return [
@@ -270,15 +291,15 @@ defineExpose({ focus: () => input.value?.focus() })
         v-show="showList"
         class="sheet absolute inset-x-0 top-full z-30 mt-1.5 max-h-[min(20rem,42svh)] overflow-y-auto overscroll-contain"
       >
-        <p v-if="status && !results.length" class="px-4 py-3.5 text-sm text-ink-soft" aria-hidden="true">
+        <p v-if="status && !options.length" class="px-4 py-3.5 text-sm text-ink-soft" aria-hidden="true">
           {{ status }}
         </p>
         <!-- Listbox always in the DOM: aria-controls must point at an existing element. -->
         <ul :id="listboxId" role="listbox" :aria-multiselectable="multiple || undefined" aria-label="Diagnosis codes">
           <li
-            v-for="(diagnosis, i) in results"
+            v-for="(diagnosis, i) in options"
             :id="optionId(i)"
-            :key="diagnosis.code"
+            :key="(diagnosis.prefix ? 'prefix:' : '') + diagnosis.code"
             role="option"
             :aria-selected="isSelected(diagnosis.code)"
             :aria-disabled="(atMax && !isSelected(diagnosis.code)) || undefined"
@@ -288,11 +309,14 @@ defineExpose({ focus: () => input.value?.focus() })
             @mousemove="activeIndex = i"
             @click="choose(diagnosis)"
           >
-            <span class="code-stamp shrink-0" :class="isSelected(diagnosis.code) && 'border-accent bg-accent text-card'">
-              {{ diagnosis.code }}
+            <span
+              class="code-stamp shrink-0"
+              :class="[diagnosis.prefix && 'border-dashed', isSelected(diagnosis.code) && 'border-accent bg-accent text-card']"
+            >
+              {{ diagnosis.code }}{{ diagnosis.prefix ? '…' : '' }}
             </span>
             <span class="min-w-0 flex-1 text-sm leading-snug text-ink-soft">
-              <template v-for="(part, j) in highlight(diagnosis.description)" :key="j">
+              <template v-for="(part, j) in highlight(diagnosis)" :key="j">
                 <mark v-if="part.match" class="bg-transparent font-semibold text-ink">{{ part.text }}</mark>
                 <template v-else>{{ part.text }}</template>
               </template>
