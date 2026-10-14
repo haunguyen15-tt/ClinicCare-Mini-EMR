@@ -15,6 +15,14 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 # FastAPI dependencies are declared as default arguments.
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Security"]
 
+[tool.pyright]
+include = ["app"]
+pythonVersion = "3.11"
+venvPath = "."
+venv = ".venv"
+# Same level as Pylance's "standard" mode in the editor.
+typeCheckingMode = "standard"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
