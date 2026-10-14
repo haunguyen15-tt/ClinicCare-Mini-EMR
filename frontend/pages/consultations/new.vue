@@ -126,7 +126,7 @@ async function onSubmit() {
         @dismiss="serverError = null"
       />
 
-      <fieldset>
+      <fieldset class="min-w-0">
         <legend class="eyebrow text-accent">Patient</legend>
         <div class="mt-5 grid gap-7 sm:grid-cols-[minmax(0,1fr)_11rem] sm:gap-6">
           <div>
@@ -170,7 +170,9 @@ async function onSubmit() {
         </div>
       </fieldset>
 
-      <fieldset class="mt-10">
+      <!-- min-w-0: by default a fieldset is never narrower than its content, so a chip with a
+           long description would widen the page on phones. -->
+      <fieldset class="mt-10 min-w-0">
         <legend class="eyebrow text-accent">Assessment</legend>
         <div class="mt-5">
           <label for="diagnosis_codes" class="form-label">Diagnosis codes</label>
