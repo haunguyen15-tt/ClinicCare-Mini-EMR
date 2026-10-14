@@ -10,6 +10,7 @@
   ],
   "words": [
     "addopts",
+    "antialiased",
     "autoflush",
     "cliniccare",
     "executescript",
@@ -18,7 +19,9 @@
     "httpx",
     "jsonable",
     "mypy",
+    "nuxi",
     "nuxt",
+    "nuxtjs",
     "ondelete",
     "pycache",
     "pydantic",
@@ -26,7 +29,9 @@
     "pytest",
     "sessionmaker",
     "sqlalchemy",
+    "tailwindcss",
     "testpaths",
+    "typecheck",
     "uvicorn",
     "venv"
   ]
