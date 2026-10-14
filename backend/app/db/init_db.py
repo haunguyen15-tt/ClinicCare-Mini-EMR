@@ -1,4 +1,5 @@
 import logging
+import sqlite3
 from pathlib import Path
 
 from sqlalchemy import func, select
@@ -24,13 +25,17 @@ def seed_diagnosis_codes(engine: Engine, sql_path: Path = SEED_SQL_PATH) -> int:
     raw = engine.raw_connection()
     try:
         # The seed file is plain SQLite SQL, so hand it to the driver as one script.
-        raw.driver_connection.executescript(script)
+        driver_conn = raw.driver_connection
+        if not isinstance(driver_conn, sqlite3.Connection):
+            raise RuntimeError("The diagnosis seed file requires a SQLite database")
+        driver_conn.executescript(script)
         raw.commit()
     finally:
         raw.close()
 
     with Session(engine) as session:
         count = session.scalar(select(func.count()).select_from(DiagnosisCode)) or 0
+
     logger.info("Seeded %d diagnosis codes from %s", count, sql_path.name)
     return count
 
