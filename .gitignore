@@ -25,10 +25,15 @@ htmlcov/
 node_modules/
 .nuxt/
 .output/
+.nuxt-e2e/
+.output-e2e/
 .nitro/
 .cache/
 dist/
 coverage/
+test-results/
+playwright-report/
+.lighthouseci/
 *.log
 npm-debug.log*
 

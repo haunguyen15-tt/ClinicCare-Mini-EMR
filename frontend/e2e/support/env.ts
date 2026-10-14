@@ -1,0 +1,22 @@
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
+// Ports and paths of the stack that playwright.config.ts starts. Ports differ from the dev
+// defaults (3000/8000), so a running `nuxt dev` or uvicorn does not get in the way.
+export const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 3020)
+export const API_PORT = Number(process.env.E2E_API_PORT ?? 8020)
+export const WEB_URL = `http://localhost:${WEB_PORT}`
+export const API_URL = `http://127.0.0.1:${API_PORT}`
+
+export const BACKEND_DIR = fileURLToPath(new URL('../../../backend', import.meta.url))
+// A throwaway database, deleted before every run by e2e/start-backend.mjs.
+export const DB_FILE = `${BACKEND_DIR}/data/e2e.db`
+
+// The backend's virtualenv when there is one, else `python` from PATH (as in CI).
+export const PYTHON =
+  process.env.E2E_PYTHON
+  ?? [`${BACKEND_DIR}/.venv/Scripts/python.exe`, `${BACKEND_DIR}/.venv/bin/python`].find((path) => existsSync(path))
+  ?? 'python'
+
+// The demo doctor the backend creates on startup.
+export const DOCTOR = { username: 'doctor', password: 'doctor123', fullName: 'Dr. Avery Quinn' }

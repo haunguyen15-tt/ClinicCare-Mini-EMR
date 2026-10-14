@@ -25,6 +25,15 @@ export default defineNuxtConfig({
     },
   },
 
+  // `npm run build:e2e` (the e2e and Lighthouse runs) builds into its own folders, so it
+  // never overwrites the .nuxt/ of a running `nuxt dev`.
+  $env: {
+    e2e: {
+      buildDir: '.nuxt-e2e',
+      nitro: { output: { dir: '.output-e2e' } },
+    },
+  },
+
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
