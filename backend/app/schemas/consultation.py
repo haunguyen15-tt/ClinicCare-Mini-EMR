@@ -69,3 +69,8 @@ class ConsultationRead(BaseModel):
     doctor_id: int | None
     created_at: UTCDateTime
     diagnoses: list[DiagnosisRead]
+
+
+class ConsultationList(BaseModel):
+    items: list[ConsultationRead]
+    total: int

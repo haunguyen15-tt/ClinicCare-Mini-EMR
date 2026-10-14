@@ -1,7 +1,9 @@
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from collections.abc import Sequence
 
-from app.core.errors import BadRequestError
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session, selectinload
+
+from app.core.errors import BadRequestError, NotFoundError
 from app.models import Consultation, DiagnosisCode
 from app.schemas.consultation import ConsultationCreate
 
@@ -26,4 +28,26 @@ def create_consultation(db: Session, data: ConsultationCreate) -> Consultation:
     db.add(consultation)
     db.commit()
     db.refresh(consultation)
+    return consultation
+
+
+def list_consultations(db: Session, skip: int, limit: int) -> tuple[Sequence[Consultation], int]:
+    """Return one page of consultations, newest first, and the total count."""
+    total = db.scalar(select(func.count()).select_from(Consultation)) or 0
+    items = db.scalars(
+        select(Consultation)
+        .options(selectinload(Consultation.diagnoses))
+        .order_by(Consultation.consultation_date.desc(), Consultation.id.desc())
+        .offset(skip)
+        .limit(limit)
+    ).all()
+    return items, total
+
+
+def get_consultation(db: Session, consultation_id: int) -> Consultation:
+    consultation = db.get(
+        Consultation, consultation_id, options=[selectinload(Consultation.diagnoses)]
+    )
+    if consultation is None:
+        raise NotFoundError("Consultation not found")
     return consultation
