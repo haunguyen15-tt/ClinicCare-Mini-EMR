@@ -1,15 +1,26 @@
 from collections.abc import Iterator
+from pathlib import Path
 from sqlite3 import Connection as SQLite3Connection
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 
 
 def build_engine(url: str, **kwargs) -> Engine:
-    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
+    connect_args = {}
+    parsed = make_url(url)
+    if parsed.get_backend_name() == "sqlite":
+        connect_args["check_same_thread"] = False
+        # SQLite creates the file but not its folder (e.g. backend/data/).
+        if (
+            parsed.database
+            and parsed.database != ":memory:"
+            and not parsed.database.startswith("file:")
+        ):
+            Path(parsed.database).parent.mkdir(parents=True, exist_ok=True)
     return create_engine(url, connect_args=connect_args, echo=settings.sql_echo, **kwargs)
 
 
