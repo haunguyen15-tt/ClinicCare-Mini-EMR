@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     demo_doctor_username: str = "doctor"
     demo_doctor_password: SecretStr = SecretStr("doctor123")
     demo_doctor_full_name: str = "Dr. Demo"
+    # Sample consultations for the demo doctor, added once while the table is still empty.
+    demo_consultations: bool = True
 
     @field_validator("database_url")
     @classmethod

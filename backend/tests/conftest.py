@@ -5,6 +5,7 @@ import os
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["JWT_SECRET"] = "test-secret-that-is-long-enough-for-hs256"
 os.environ["DEMO_DOCTOR_USERNAME"] = ""
+os.environ["DEMO_CONSULTATIONS"] = "false"
 
 from collections.abc import Iterator
 

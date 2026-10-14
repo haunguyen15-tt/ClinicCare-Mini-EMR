@@ -50,6 +50,8 @@ export default defineConfig({
         DEMO_DOCTOR_USERNAME: DOCTOR.username,
         DEMO_DOCTOR_PASSWORD: DOCTOR.password,
         DEMO_DOCTOR_FULL_NAME: DOCTOR.fullName,
+        // Tests create their own data; no sample consultations.
+        DEMO_CONSULTATIONS: 'false',
       },
     },
     {
