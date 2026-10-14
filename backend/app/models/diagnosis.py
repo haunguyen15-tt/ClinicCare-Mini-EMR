@@ -8,7 +8,7 @@ class DiagnosisCode(Base):
     __tablename__ = "diagnosis_codes"
 
     code: Mapped[str] = mapped_column(String(10), primary_key=True)
-    description: Mapped[str] = mapped_column(String(255), index=True)
+    description: Mapped[str] = mapped_column(String(255))
 
     def __repr__(self) -> str:
         return f"DiagnosisCode({self.code!r})"

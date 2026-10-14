@@ -1,4 +1,3 @@
-from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
 
@@ -7,6 +6,17 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
+
+
+def sqlite_file_path(url: str) -> Path | None:
+    """Return the file path of a file-based SQLite URL, or None for any other database."""
+    parsed = make_url(url)
+    database = parsed.database
+    if parsed.get_backend_name() != "sqlite" or not database or database == ":memory:":
+        return None
+    if database.startswith("file:"):
+        return None
+    return Path(database)
 
 
 class Settings(BaseSettings):
@@ -26,15 +36,11 @@ class Settings(BaseSettings):
     def _anchor_sqlite_path(cls, value: str) -> str:
         # Resolve relative SQLite paths against backend/, not the current working directory,
         # so starting uvicorn from another folder never creates a second, empty database.
-        url = make_url(value)
-        database = url.database
-        if url.get_backend_name() != "sqlite" or not database or database == ":memory:":
+        path = sqlite_file_path(value)
+        if path is None or path.is_absolute():
             return value
-        if database.startswith("file:") or Path(database).is_absolute():
-            return value
-        absolute = (BACKEND_DIR / database).resolve().as_posix()
-        query = "&".join(f"{key}={val}" for key, val in url.query.items())
-        return f"{url.drivername}:///{absolute}" + (f"?{query}" if query else "")
+        absolute = (BACKEND_DIR / path).resolve().as_posix()
+        return make_url(value).set(database=absolute).render_as_string(hide_password=False)
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -44,9 +50,4 @@ class Settings(BaseSettings):
         return value
 
 
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
-
-
-settings = get_settings()
+settings = Settings()

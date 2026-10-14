@@ -1,12 +1,11 @@
 """Domain exceptions and the handlers that turn every error into ``{"detail": ...}``."""
 
 import logging
-from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, status
-from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 class AppError(Exception):
     """Base class for errors that map to a specific HTTP status."""
 
-    status_code = status.HTTP_400_BAD_REQUEST
+    status_code: int
 
     def __init__(self, detail: str) -> None:
         super().__init__(detail)
@@ -29,40 +28,54 @@ class NotFoundError(AppError):
     status_code = status.HTTP_404_NOT_FOUND
 
 
-async def app_error_handler(_request: Request, exc: Exception) -> JSONResponse:
-    assert isinstance(exc, AppError)
+async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
-async def validation_error_handler(_request: Request, exc: Exception) -> JSONResponse:
-    assert isinstance(exc, RequestValidationError)
+async def validation_error_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:
     # Keep location, message and type only: the raw input may contain sensitive values.
-    errors = [
-        {"loc": list(err.get("loc", ())), "msg": err.get("msg", ""), "type": err.get("type", "")}
-        for err in exc.errors()
-    ]
+    errors = [{"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]} for e in exc.errors()]
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-        content={"detail": jsonable_encoder(errors)},
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content={"detail": errors}
     )
 
 
-async def catch_unhandled_errors(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    # Runs as middleware rather than an Exception handler so the 500 response still
-    # passes through CORSMiddleware and the browser can read it.
-    try:
-        return await call_next(request)
-    except Exception:
-        logger.exception("Unhandled error on %s %s", request.method, request.url.path)
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "Internal server error"},
-        )
+class CatchUnhandledErrorsMiddleware:
+    """Turn unhandled exceptions into a generic 500 JSON response.
+
+    Added before CORSMiddleware so CORS wraps it and the browser can read the 500 body.
+    A FastAPI ``Exception`` handler would run outside CORS and lose those headers.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        response_started = False
+
+        async def send_wrapper(message: Message) -> None:
+            nonlocal response_started
+            response_started |= message["type"] == "http.response.start"
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_wrapper)
+        except Exception:
+            logger.exception("Unhandled error on %s %s", scope["method"], scope["path"])
+            if response_started:
+                raise
+            response = JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"detail": "Internal server error"},
+            )
+            await response(scope, receive, send)
 
 
 def register_error_handlers(app: FastAPI) -> None:
-    app.add_exception_handler(AppError, app_error_handler)
-    app.add_exception_handler(RequestValidationError, validation_error_handler)
-    app.middleware("http")(catch_unhandled_errors)
+    app.exception_handler(AppError)(app_error_handler)
+    app.exception_handler(RequestValidationError)(validation_error_handler)
+    app.add_middleware(CatchUnhandledErrorsMiddleware)

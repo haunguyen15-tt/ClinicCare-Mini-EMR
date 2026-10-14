@@ -1,27 +1,21 @@
 from collections.abc import Iterator
-from pathlib import Path
 from sqlite3 import Connection as SQLite3Connection
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.engine import Engine, make_url
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.core.config import settings
+from app.core.config import settings, sqlite_file_path
 
 
-def build_engine(url: str, **kwargs) -> Engine:
+def build_engine(url: str, echo: bool = False) -> Engine:
     connect_args = {}
-    parsed = make_url(url)
-    if parsed.get_backend_name() == "sqlite":
+    if url.startswith("sqlite"):
         connect_args["check_same_thread"] = False
-        # SQLite creates the file but not its folder (e.g. backend/data/).
-        if (
-            parsed.database
-            and parsed.database != ":memory:"
-            and not parsed.database.startswith("file:")
-        ):
-            Path(parsed.database).parent.mkdir(parents=True, exist_ok=True)
-    return create_engine(url, connect_args=connect_args, echo=settings.sql_echo, **kwargs)
+    # SQLite creates the file but not its folder (e.g. backend/data/).
+    if path := sqlite_file_path(url):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    return create_engine(url, connect_args=connect_args, echo=echo)
 
 
 @event.listens_for(Engine, "connect")
@@ -33,13 +27,10 @@ def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record) -> None:
         cursor.close()
 
 
-engine = build_engine(settings.database_url)
+engine = build_engine(settings.database_url, echo=settings.sql_echo)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
 def get_db() -> Iterator[Session]:
-    db = SessionLocal()
-    try:
+    with SessionLocal() as db:
         yield db
-    finally:
-        db.close()
