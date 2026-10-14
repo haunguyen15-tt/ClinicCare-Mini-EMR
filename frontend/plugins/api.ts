@@ -2,7 +2,12 @@
 // It lives in a plugin so the 401 redirect can run inside the Nuxt app context.
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
-  const token = useAuthToken()
+
+  // The access token, kept in a cookie so it is available during SSR and survives a refresh.
+  // Created once per app and shared through useAuthToken(): separate useCookie refs with the
+  // same name only sync asynchronously, so a freshly set token could miss the next request.
+  // Expiry is enforced by the API: an expired token gets a 401 and is cleared below.
+  const token = useCookie<string | null>('cc_token', { default: () => null, sameSite: 'lax' })
 
   const api = $fetch.create({
     baseURL: config.public.apiBase,
@@ -23,5 +28,5 @@ export default defineNuxtPlugin((nuxtApp) => {
     },
   })
 
-  return { provide: { api } }
+  return { provide: { api, authToken: token } }
 })
