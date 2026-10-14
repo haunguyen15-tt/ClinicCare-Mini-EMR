@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.errors import BadRequestError, NotFoundError
 from app.models import Consultation, DiagnosisCode
 from app.schemas.consultation import ConsultationCreate
+from app.services.query_utils import LIKE_ESCAPE, escape_like
 
 
 def create_consultation(db: Session, data: ConsultationCreate) -> Consultation:
@@ -31,11 +32,34 @@ def create_consultation(db: Session, data: ConsultationCreate) -> Consultation:
     return consultation
 
 
-def list_consultations(db: Session, skip: int, limit: int) -> tuple[Sequence[Consultation], int]:
-    """Return one page of consultations, newest first, and the total count."""
-    total = db.scalar(select(func.count()).select_from(Consultation)) or 0
+def list_consultations(
+    db: Session,
+    skip: int,
+    limit: int,
+    patient: str | None = None,
+    diagnosis: str | None = None,
+) -> tuple[Sequence[Consultation], int]:
+    """Return one page of consultations, newest first, and the total count.
+
+    ``patient`` matches part of the patient name, case-insensitively.
+    ``diagnosis`` matches a code exactly or by prefix, so ``E11`` finds every E11.x note.
+    """
+    filters = []
+    if patient := (patient or "").strip():
+        filters.append(
+            Consultation.patient_name.ilike(f"%{escape_like(patient)}%", escape=LIKE_ESCAPE)
+        )
+    if diagnosis := (diagnosis or "").strip().upper():
+        filters.append(
+            Consultation.diagnoses.any(
+                DiagnosisCode.code.like(f"{escape_like(diagnosis)}%", escape=LIKE_ESCAPE)
+            )
+        )
+
+    total = db.scalar(select(func.count()).select_from(Consultation).where(*filters)) or 0
     items = db.scalars(
         select(Consultation)
+        .where(*filters)
         .options(selectinload(Consultation.diagnoses))
         .order_by(Consultation.consultation_date.desc(), Consultation.id.desc())
         .offset(skip)

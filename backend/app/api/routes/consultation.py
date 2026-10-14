@@ -20,8 +20,14 @@ def list_consultations(
     db: DbSession,
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    patient: Annotated[
+        str | None, Query(max_length=100, description="Part of the patient name")
+    ] = None,
+    diagnosis: Annotated[
+        str | None, Query(max_length=10, description="Diagnosis code or code prefix, e.g. E11")
+    ] = None,
 ) -> ConsultationList:
-    items, total = consultation_service.list_consultations(db, skip, limit)
+    items, total = consultation_service.list_consultations(db, skip, limit, patient, diagnosis)
     return ConsultationList.model_validate({"items": items, "total": total}, from_attributes=True)
 
 
