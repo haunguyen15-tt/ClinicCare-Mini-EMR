@@ -15,8 +15,12 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 # FastAPI dependencies are declared as default arguments.
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Security"]
 
+[tool.ruff.lint.per-file-ignores]
+# Test settings are pinned through environment variables before the app is imported.
+"tests/conftest.py" = ["E402"]
+
 [tool.pyright]
-include = ["app"]
+include = ["app", "tests"]
 pythonVersion = "3.11"
 venvPath = "."
 venv = ".venv"
