@@ -80,6 +80,14 @@ describe('ConsultationTable', () => {
     expect(wrapper.get('caption').text()).toBe('Search results')
   })
 
+  it('titles the cards one level below the page heading they sit under', async () => {
+    const wrapper = await mountTable({ consultations: CONSULTATIONS, headingLevel: 2 })
+
+    const cards = wrapper.findAll('ul[aria-label="Consultations"] > li')
+    expect(cards[0]!.get('h2').text()).toBe('Alice Morgan')
+    expect(cards[0]!.find('h3').exists()).toBe(false)
+  })
+
   it('marks the highlighted consultation in both views', async () => {
     const wrapper = await mountTable({ consultations: CONSULTATIONS, highlightId: 42 })
 

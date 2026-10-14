@@ -13,7 +13,7 @@
     --rule-strong: 178 192 177;
     --ink: 23 38 31; /* green-black text */
     --ink-soft: 75 91 83;
-    --ink-faint: 112 126 118;
+    --ink-faint: 96 108 101; /* 4.5:1 or better on card, paper and paper-deep */
     --pine: 30 65 54; /* scrubs green: primary actions */
     --pine-deep: 20 46 38; /* chart cover */
     --accent: 36 119 90; /* emerald: margin rule, active state, focus */

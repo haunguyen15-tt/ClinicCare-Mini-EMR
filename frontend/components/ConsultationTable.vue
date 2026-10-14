@@ -3,7 +3,7 @@ import type { Consultation } from '~/types/api'
 
 // Consultation notes as a ruled ledger from md up, and as stacked chart cards on phones.
 // Both views are always rendered; CSS shows one of them.
-withDefaults(
+const props = withDefaults(
   defineProps<{
     consultations: Consultation[]
     /** A request is in flight: shows placeholders when there is nothing yet, else dims the rows. */
@@ -12,9 +12,13 @@ withDefaults(
     caption?: string
     /** A consultation to mark, e.g. the one just saved. */
     highlightId?: number
+    /** Level of each card's patient heading: one below the heading the list sits under. */
+    headingLevel?: 2 | 3
   }>(),
-  { caption: 'Consultations' },
+  { caption: 'Consultations', headingLevel: 3 },
 )
+
+const cardHeading = computed(() => `h${props.headingLevel}`)
 
 // Record number printed in the margin: 7 -> "007".
 const recordNo = (id: number) => String(id).padStart(3, '0')
@@ -65,7 +69,7 @@ const timeProps = { locale: LOCALE, ...TIME_PARTS }
           <span class="text-ink-faint">No. {{ recordNo(item.id) }}</span>
         </div>
 
-        <h3 class="mt-2 break-words text-xl font-semibold leading-tight tracking-tight">{{ item.patient_name }}</h3>
+        <component :is="cardHeading" class="mt-2 break-words text-xl font-semibold leading-tight tracking-tight">{{ item.patient_name }}</component>
         <p v-if="item.patient_dob" class="mt-0.5 font-mono text-xs text-ink-faint">
           b. {{ formatDate(item.patient_dob) }} · {{ ageFrom(item.patient_dob) }} y
         </p>

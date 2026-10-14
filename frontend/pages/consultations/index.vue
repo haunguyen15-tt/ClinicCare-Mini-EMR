@@ -34,6 +34,7 @@ const notice = ref(useFlash().take())
     <div v-else class="reveal space-y-5 [--d:240ms]">
       <ConsultationTable
         :consultations="data?.items ?? []"
+        :heading-level="2"
         :loading="pending"
         :highlight-id="notice?.consultationId"
       >

@@ -18,6 +18,12 @@ export default defineNuxtConfig({
     strict: true,
   },
 
+  // Pre-compressed (gzip + brotli) copies of the built JS, CSS and fonts; Nitro serves them
+  // to browsers that accept them. HTML is compressed per request (server/plugins/compress.ts).
+  nitro: {
+    compressPublicAssets: true,
+  },
+
   // Server-only: the browser talks to this app's server routes (server/api), never to FastAPI.
   runtimeConfig: {
     // FastAPI's URL as the Nuxt server sees it. Overridden at runtime by NUXT_API_BASE.
