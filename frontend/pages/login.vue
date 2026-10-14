@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'auth' })
+definePageMeta({ layout: 'auth', guest: true })
 useHead({ title: 'Sign in · ClinicCare' })
 
 const { login } = useAuth()

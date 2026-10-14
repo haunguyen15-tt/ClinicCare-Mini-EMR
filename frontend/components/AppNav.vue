@@ -9,6 +9,12 @@ const links = [
 const linkClass =
   'flex min-h-11 items-center rounded-md px-3 font-medium hover:bg-slate-100 aria-[current=page]:bg-brand-50 aria-[current=page]:text-brand-700'
 
+const { doctor, isAuthenticated, fetchMe, logout } = useAuth()
+
+// After a refresh only the token survives; load the doctor once (on the server when possible).
+// A 401 here is handled by the api plugin, and any other failure just leaves the name out.
+if (isAuthenticated.value && !doctor.value) await fetchMe().catch(() => {})
+
 const menuOpen = ref(false)
 const route = useRoute()
 
@@ -35,13 +41,27 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         </NuxtLink>
 
         <!-- Desktop / tablet links -->
-        <ul class="hidden items-center gap-1 md:flex">
-          <li v-for="link in links" :key="link.to">
-            <NuxtLink :to="link.to" :class="[linkClass, 'text-sm text-slate-600 hover:text-slate-900']">
-              {{ link.label }}
-            </NuxtLink>
-          </li>
-        </ul>
+        <div class="hidden min-w-0 items-center gap-4 md:flex">
+          <ul class="flex items-center gap-1">
+            <li v-for="link in links" :key="link.to">
+              <NuxtLink :to="link.to" :class="[linkClass, 'whitespace-nowrap text-sm text-slate-600 hover:text-slate-900']">
+                {{ link.label }}
+              </NuxtLink>
+            </li>
+          </ul>
+          <div class="flex min-w-0 items-center gap-2 border-l border-slate-200 pl-4">
+            <span v-if="doctor" class="max-w-40 truncate text-sm text-slate-600" :title="doctor.full_name">
+              {{ doctor.full_name }}
+            </span>
+            <button
+              type="button"
+              class="min-h-11 whitespace-nowrap rounded-md px-3 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              @click="logout"
+            >
+              Log out
+            </button>
+          </div>
+        </div>
 
         <!-- Mobile menu toggle -->
         <button
@@ -63,13 +83,27 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       </div>
 
       <!-- Mobile links -->
-      <ul v-show="menuOpen" id="mobile-menu" class="space-y-1 border-t border-slate-200 py-2 md:hidden">
-        <li v-for="link in links" :key="link.to">
-          <NuxtLink :to="link.to" :class="[linkClass, 'text-base text-slate-700']">
-            {{ link.label }}
-          </NuxtLink>
-        </li>
-      </ul>
+      <div v-show="menuOpen" id="mobile-menu" class="border-t border-slate-200 py-2 md:hidden">
+        <ul class="space-y-1">
+          <li v-for="link in links" :key="link.to">
+            <NuxtLink :to="link.to" :class="[linkClass, 'text-base text-slate-700']">
+              {{ link.label }}
+            </NuxtLink>
+          </li>
+        </ul>
+        <div class="mt-2 flex items-center justify-between gap-3 border-t border-slate-200 pt-2">
+          <span v-if="doctor" class="min-w-0 truncate px-3 text-sm text-slate-600">
+            Signed in as <span class="font-medium text-slate-900">{{ doctor.full_name }}</span>
+          </span>
+          <button
+            type="button"
+            class="ml-auto min-h-11 shrink-0 rounded-md px-3 text-base font-medium text-slate-700 hover:bg-slate-100"
+            @click="logout"
+          >
+            Log out
+          </button>
+        </div>
+      </div>
     </nav>
   </header>
 </template>

@@ -19,11 +19,10 @@ export default defineNuxtPlugin((nuxtApp) => {
       // A 401 without a token (e.g. wrong password on the login form) is left to the caller.
       if (response.status !== 401 || !options.headers.has('Authorization')) return
 
-      token.value = null
       await nuxtApp.runWithContext(() => {
+        useAuth().clearSession()
         const route = useRoute()
-        if (route.path === '/login') return
-        return navigateTo({ path: '/login', query: { redirect: route.fullPath } })
+        if (!route.meta.guest) return navigateTo(loginRoute(route.fullPath))
       })
     },
   })
