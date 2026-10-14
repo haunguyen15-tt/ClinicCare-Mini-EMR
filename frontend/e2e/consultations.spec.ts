@@ -1,5 +1,5 @@
 import { withDiagnosisRemoved } from './support/db'
-import { DOCTOR } from './support/env'
+import { DOCTOR, EXTERNAL } from './support/env'
 import { expect, test, uniqueTag } from './support/fixtures'
 import type { App, Page } from './support/fixtures'
 
@@ -116,6 +116,7 @@ test('shows the server’s validation errors (422) next to their fields', async 
 })
 
 test('shows the server’s error (400) for a code that no longer exists', async ({ page, app, backend }) => {
+  test.skip(EXTERNAL, 'needs direct access to the database file')
   const patient = `Priya Natarajan ${uniqueTag()}`
   await openForm(app)
   const f = form(page)

@@ -1,8 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
-import { API_PORT, API_URL, BACKEND_DIR, DB_FILE, DOCTOR, PYTHON, WEB_PORT, WEB_URL } from './e2e/support/env'
+import { API_PORT, API_URL, BACKEND_DIR, DB_FILE, DOCTOR, EXTERNAL, PYTHON, WEB_PORT, WEB_URL } from './e2e/support/env'
 
 // End-to-end tests against the real stack: the FastAPI backend on a fresh SQLite database
-// and the production Nuxt build. No request is mocked or intercepted.
+// and the production Nuxt build. No request is mocked or intercepted. With E2E_BASE_URL set
+// (see e2e/support/env.ts) the suite runs against that app instead and starts nothing.
 export default defineConfig({
   testDir: './e2e',
   // One worker: every test shares one database, and some check what is newest.
@@ -29,7 +30,7 @@ export default defineConfig({
     { name: 'phone', use: { ...devices['Pixel 7'] } },
   ],
 
-  webServer: [
+  webServer: EXTERNAL ? undefined : [
     {
       command: 'node e2e/start-backend.mjs',
       url: `${API_URL}/health`,

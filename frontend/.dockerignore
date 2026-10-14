@@ -1,0 +1,18 @@
+# Build inputs only: no installed modules, build output, tests or reports.
+node_modules/
+.nuxt/
+.output/
+.nuxt-e2e/
+.output-e2e/
+.nitro/
+.cache/
+test-results/
+playwright-report/
+coverage/
+e2e/
+tests/
+playwright.config.ts
+vitest.config.ts
+.env
+.env.*
+!.env.example

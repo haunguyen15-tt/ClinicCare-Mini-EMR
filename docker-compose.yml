@@ -1,0 +1,36 @@
+# ClinicCare Mini EMR: `docker compose up --build`, then open http://localhost:3000.
+#
+# Only the frontend is published. The browser talks to the Nuxt server, and the Nuxt server
+# talks to the API over the compose network (its /api BFF adds the token from the HttpOnly
+# cookie), so the API needs no CORS setup and no public port.
+
+services:
+  backend:
+    build: ./backend
+    # The same settings file as a local run (copy backend/.env.example). Set JWT_SECRET there:
+    # without it every container restart signs everyone out. A relative SQLite DATABASE_URL
+    # resolves to /app/data, the volume below.
+    env_file: ./backend/.env
+    volumes:
+      - db-data:/app/data
+    # Uncomment to use Swagger at http://localhost:8000/docs (bound to this machine only).
+    # ports:
+    #   - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    # Docker-specific, so set here rather than read from frontend/.env.
+    environment:
+      NUXT_API_BASE: http://backend:8000
+      # Plain http here, so the token cookie cannot be `Secure`. Set to true behind HTTPS.
+      NUXT_COOKIE_SECURE: "false"
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db-data:
