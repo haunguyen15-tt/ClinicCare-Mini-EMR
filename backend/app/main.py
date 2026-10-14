@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import consultation, diagnosis, health
+from app.api.routes import auth, consultation, diagnosis, health
 from app.core.config import settings
 from app.core.errors import register_error_handlers
 from app.db.init_db import init_db
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health.router)
+    app.include_router(auth.router)
     app.include_router(diagnosis.router)
     app.include_router(consultation.router)
     return app

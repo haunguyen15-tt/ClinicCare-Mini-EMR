@@ -14,6 +14,7 @@ class AppError(Exception):
     """Base class for errors that map to a specific HTTP status."""
 
     status_code: int
+    headers: dict[str, str] | None = None
 
     def __init__(self, detail: str) -> None:
         super().__init__(detail)
@@ -24,12 +25,19 @@ class BadRequestError(AppError):
     status_code = status.HTTP_400_BAD_REQUEST
 
 
+class UnauthorizedError(AppError):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    headers = {"WWW-Authenticate": "Bearer"}
+
+
 class NotFoundError(AppError):
     status_code = status.HTTP_404_NOT_FOUND
 
 
 async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    return JSONResponse(
+        status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers
+    )
 
 
 async def validation_error_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:

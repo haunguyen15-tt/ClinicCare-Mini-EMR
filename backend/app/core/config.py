@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(32), min_length=32)
     access_token_expire_minutes: int = Field(default=60, ge=1)
 
+    # Demo account created at startup when the username does not exist yet.
+    # Leave DEMO_DOCTOR_USERNAME empty to skip it.
+    demo_doctor_username: str = "doctor"
+    demo_doctor_password: str = "doctor123"
+    demo_doctor_full_name: str = "Dr. Demo"
+
     @field_validator("database_url")
     @classmethod
     def _anchor_sqlite_path(cls, value: str) -> str:

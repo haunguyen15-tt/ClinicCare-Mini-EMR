@@ -3,10 +3,12 @@ import sqlite3
 from pathlib import Path
 
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 from app.core.config import BACKEND_DIR
 from app.db.base import Base
 from app.models import DiagnosisCode  # importing app.models registers every table
+from app.services.auth_service import ensure_demo_doctor
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +37,12 @@ def seed_diagnosis_codes(engine: Engine, sql_path: Path = SEED_SQL_PATH) -> int:
 
 
 def init_db(engine: Engine) -> None:
-    """Create missing tables and seed reference data.
+    """Create missing tables, seed reference data and the demo doctor.
 
     The schema is small, so create_all stands in for migrations.
     """
     Base.metadata.create_all(bind=engine)
     seed_diagnosis_codes(engine)
+    with Session(engine) as db:
+        ensure_demo_doctor(db)
     logger.info("Database ready")
