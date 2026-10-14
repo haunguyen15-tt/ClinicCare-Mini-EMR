@@ -4,6 +4,7 @@ from typing import Annotated
 
 from pydantic import (
     AfterValidator,
+    AliasPath,
     BaseModel,
     ConfigDict,
     Field,
@@ -59,7 +60,7 @@ class ConsultationRead(BaseModel):
     notes: str
     consultation_date: datetime
     doctor_id: int | None
-    doctor_name: str | None
+    doctor_name: str | None = Field(default=None, validation_alias=AliasPath("doctor", "full_name"))
     created_at: datetime
     diagnoses: list[DiagnosisRead]
 

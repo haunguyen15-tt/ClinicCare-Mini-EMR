@@ -1,22 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Query, status
 
-from app.api.deps import (
-    CodePrefix,
-    CurrentDoctor,
-    DbSession,
-    PageLimit,
-    SearchText,
-    get_current_doctor,
-)
+from app.api.deps import CodePrefix, CurrentDoctor, DbSession, PageLimit, SearchText
 from app.models import Consultation
 from app.schemas.consultation import ConsultationCreate, ConsultationList, ConsultationRead
 from app.services import consultation_service
 
-router = APIRouter(
-    prefix="/consultation", tags=["consultation"], dependencies=[Depends(get_current_doctor)]
-)
+router = APIRouter(prefix="/consultation", tags=["consultation"])
 
 
 @router.post("", response_model=ConsultationRead, status_code=status.HTTP_201_CREATED)
@@ -26,7 +17,7 @@ def create_consultation(
     return consultation_service.create_consultation(db, data, doctor)
 
 
-@router.get("")
+@router.get("", response_model=ConsultationList)
 def list_consultations(
     db: DbSession,
     skip: Annotated[int, Query(ge=0)] = 0,
@@ -35,9 +26,9 @@ def list_consultations(
     diagnosis: Annotated[
         CodePrefix | None, Query(description="Diagnosis code or code prefix, e.g. E11")
     ] = None,
-) -> ConsultationList:
+) -> dict[str, object]:
     items, total = consultation_service.list_consultations(db, skip, limit, patient, diagnosis)
-    return ConsultationList(items=items, total=total)
+    return {"items": items, "total": total}
 
 
 @router.get("/{consultation_id}", response_model=ConsultationRead)

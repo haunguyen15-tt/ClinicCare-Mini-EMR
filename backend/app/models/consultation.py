@@ -48,9 +48,5 @@ class Consultation(Base):
         secondary=consultation_diagnoses, order_by="DiagnosisCode.code", lazy="selectin"
     )
 
-    @property
-    def doctor_name(self) -> str | None:
-        return self.doctor.full_name if self.doctor else None
-
     def __repr__(self) -> str:
         return f"Consultation(id={self.id!r}, patient={self.patient_name!r})"

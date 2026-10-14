@@ -2,7 +2,7 @@ import secrets
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -33,13 +33,15 @@ class Settings(BaseSettings):
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
 
     # Without JWT_SECRET a random key is generated, so tokens stop working after a restart.
-    jwt_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(32), min_length=32)
+    jwt_secret: SecretStr = Field(
+        default_factory=lambda: SecretStr(secrets.token_urlsafe(32)), min_length=32
+    )
     access_token_expire_minutes: int = Field(default=60, ge=1)
 
     # Demo account created at startup when the username does not exist yet.
     # Leave DEMO_DOCTOR_USERNAME empty to skip it.
     demo_doctor_username: str = "doctor"
-    demo_doctor_password: str = "doctor123"
+    demo_doctor_password: SecretStr = SecretStr("doctor123")
     demo_doctor_full_name: str = "Dr. Demo"
 
     @field_validator("database_url")

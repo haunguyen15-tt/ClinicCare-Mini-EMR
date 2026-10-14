@@ -2,13 +2,14 @@ import logging
 import sqlite3
 from pathlib import Path
 
+from sqlalchemy import select
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session
 
-from app.core.config import BACKEND_DIR
+from app.core.config import BACKEND_DIR, settings
+from app.core.security import hash_password
 from app.db.base import Base
-from app.models import DiagnosisCode  # importing app.models registers every table
-from app.services.auth_service import ensure_demo_doctor
+from app.db.session import SessionLocal
+from app.models import DiagnosisCode, Doctor  # importing app.models registers every table
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,28 @@ def seed_diagnosis_codes(engine: Engine, sql_path: Path = SEED_SQL_PATH) -> int:
     return added
 
 
+def seed_demo_doctor(engine: Engine) -> bool:
+    """Create the demo doctor from settings unless that username exists. Returns True if added."""
+    username = settings.demo_doctor_username.strip()
+    if not username:
+        return False
+    with SessionLocal(bind=engine) as db:
+        if db.scalar(select(Doctor.id).where(Doctor.username == username)):
+            return False
+        password = settings.demo_doctor_password.get_secret_value()
+        db.add(
+            Doctor(
+                username=username,
+                full_name=settings.demo_doctor_full_name,
+                hashed_password=hash_password(password),
+            )
+        )
+        db.commit()
+
+    logger.info("Created demo doctor %r", username)
+    return True
+
+
 def init_db(engine: Engine) -> None:
     """Create missing tables, seed reference data and the demo doctor.
 
@@ -43,6 +66,5 @@ def init_db(engine: Engine) -> None:
     """
     Base.metadata.create_all(bind=engine)
     seed_diagnosis_codes(engine)
-    with Session(engine) as db:
-        ensure_demo_doctor(db)
+    seed_demo_doctor(engine)
     logger.info("Database ready")
