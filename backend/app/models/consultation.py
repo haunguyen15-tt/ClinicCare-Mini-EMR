@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import Column, Date, DateTime, ForeignKey, String, Table, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.diagnosis import DiagnosisCode
+    from app.models.doctor import Doctor
+
+
+def _utcnow() -> datetime:
+    return datetime.now(UTC)
+
+
+consultation_diagnoses = Table(
+    "consultation_diagnoses",
+    Base.metadata,
+    Column(
+        "consultation_id",
+        ForeignKey("consultations.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "diagnosis_code",
+        ForeignKey("diagnosis_codes.code", ondelete="RESTRICT"),
+        primary_key=True,
+        index=True,
+    ),
+)
+
+
+class Consultation(Base):
+    __tablename__ = "consultations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    patient_name: Mapped[str] = mapped_column(String(100), index=True)
+    patient_dob: Mapped[date | None] = mapped_column(Date)
+    notes: Mapped[str] = mapped_column(Text)
+    consultation_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, index=True
+    )
+    doctor_id: Mapped[int | None] = mapped_column(
+        ForeignKey("doctors.id", ondelete="SET NULL"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    doctor: Mapped[Doctor | None] = relationship(back_populates="consultations")
+    diagnoses: Mapped[list[DiagnosisCode]] = relationship(
+        secondary=consultation_diagnoses, order_by="DiagnosisCode.code"
+    )
+
+    def __repr__(self) -> str:
+        return f"Consultation(id={self.id!r}, patient={self.patient_name!r})"
