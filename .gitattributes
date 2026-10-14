@@ -1,0 +1,6 @@
+# Normalize line endings so files checked out on Windows still work in Linux containers.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
