@@ -69,7 +69,7 @@ Requirements: Python 3.11 or newer, Node 22 or newer.
 
 ```bash
 cd backend
-python -m venv .venv
+python3 -m venv .venv
 .venv/Scripts/activate          # Windows; on macOS/Linux: source .venv/bin/activate
 pip install -r requirements-dev.txt
 cp .env.example .env            # then set JWT_SECRET (see the comment in the file)
