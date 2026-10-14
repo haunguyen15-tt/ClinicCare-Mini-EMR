@@ -1,7 +1,8 @@
+import secrets
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -30,6 +31,10 @@ class Settings(BaseSettings):
 
     # Comma-separated in the environment, e.g. "http://localhost:3000,http://127.0.0.1:3000".
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
+
+    # Without JWT_SECRET a random key is generated, so tokens stop working after a restart.
+    jwt_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(32), min_length=32)
+    access_token_expire_minutes: int = Field(default=60, ge=1)
 
     @field_validator("database_url")
     @classmethod
