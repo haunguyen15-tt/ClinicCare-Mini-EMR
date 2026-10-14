@@ -13,7 +13,10 @@ function pageLink(page: number) {
 }
 
 // The router keeps the scroll position when only the query changes; start the new page at the top.
-watch(() => props.page, () => window.scrollTo({ top: 0, behavior: 'smooth' }))
+watch(() => props.page, () => {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
+})
 </script>
 
 <template>

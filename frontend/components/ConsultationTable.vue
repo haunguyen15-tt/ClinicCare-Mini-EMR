@@ -92,12 +92,12 @@ const timeProps = { locale: 'en-GB', hour: '2-digit', minute: '2-digit' } as con
         <!-- table-fixed takes the column widths from this row; Note gets the rest. -->
         <thead>
           <tr class="border-b border-rule-strong">
-            <th scope="col" class="eyebrow w-[3.75rem] border-r border-accent/50 py-3 pr-3 text-right font-medium">No.</th>
-            <th scope="col" class="eyebrow w-[7.25rem] px-4 py-3 font-medium">Date</th>
-            <th scope="col" class="eyebrow w-[10.5rem] px-4 py-3 font-medium xl:w-[12rem]">Patient</th>
-            <th scope="col" class="eyebrow w-[9.75rem] px-4 py-3 font-medium xl:w-[11rem]">Diagnoses</th>
-            <th scope="col" class="eyebrow px-4 py-3 font-medium">Note</th>
-            <th scope="col" class="eyebrow hidden w-[9rem] px-4 py-3 font-medium xl:table-cell">Doctor</th>
+            <th scope="col" class="eyebrow w-[3.25rem] border-r border-accent/50 py-3 pr-3 text-right font-medium xl:w-[3.75rem]">No.</th>
+            <th scope="col" class="eyebrow w-[6.75rem] px-3 py-3 font-medium xl:w-[7.25rem] xl:px-4">Date</th>
+            <th scope="col" class="eyebrow w-[9.5rem] px-3 py-3 font-medium xl:w-[12rem] xl:px-4">Patient</th>
+            <th scope="col" class="eyebrow w-[9.75rem] px-3 py-3 font-medium xl:w-[11rem] xl:px-4">Diagnoses</th>
+            <th scope="col" class="eyebrow px-3 py-3 font-medium xl:px-4">Note</th>
+            <th scope="col" class="eyebrow hidden w-[9rem] px-3 py-3 font-medium xl:table-cell xl:px-4">Doctor</th>
           </tr>
         </thead>
         <tbody>
@@ -110,7 +110,7 @@ const timeProps = { locale: 'en-GB', hour: '2-digit', minute: '2-digit' } as con
             <td class="border-r border-accent/50 py-4 pr-3 text-right font-mono text-xs text-ink-faint">
               {{ recordNo(item.id) }}
             </td>
-            <td class="px-4 py-4">
+            <td class="px-3 py-4 xl:px-4">
               <NuxtTime class="block text-sm text-ink" :datetime="item.consultation_date" v-bind="dateProps" />
               <NuxtTime class="block font-mono text-xs text-ink-faint" :datetime="item.consultation_date" v-bind="timeProps" />
               <!-- Below xl the doctor sits under the date instead of in its own column. -->
@@ -118,24 +118,24 @@ const timeProps = { locale: 'en-GB', hour: '2-digit', minute: '2-digit' } as con
                 {{ item.doctor_name ?? 'Doctor unknown' }}
               </p>
             </td>
-            <th scope="row" class="px-4 py-4 text-left font-normal">
+            <th scope="row" class="px-3 py-4 text-left font-normal xl:px-4">
               <span class="block break-words text-base font-semibold leading-snug text-ink">{{ item.patient_name }}</span>
-              <span v-if="item.patient_dob" class="mt-1 block font-mono text-xs text-ink-faint">
-                b. {{ formatDate(item.patient_dob) }}
-                <span class="whitespace-nowrap">· {{ ageFrom(item.patient_dob) }} y</span>
+              <span v-if="item.patient_dob" class="mt-1 block font-mono text-xs leading-relaxed text-ink-faint">
+                <span class="block">b. {{ formatDate(item.patient_dob) }}</span>
+                <span class="block">{{ ageFrom(item.patient_dob) }} years</span>
               </span>
             </th>
-            <td class="px-4 py-4">
+            <td class="px-3 py-4 xl:px-4">
               <ul class="flex flex-wrap gap-1.5" aria-label="Diagnoses">
                 <li v-for="diagnosis in item.diagnoses" :key="diagnosis.code">
                   <DiagnosisStamp :diagnosis="diagnosis" />
                 </li>
               </ul>
             </td>
-            <td class="px-4 py-3.5">
+            <td class="px-3 py-3.5 xl:px-4">
               <ExpandableNote :text="item.notes" :lines="2" />
             </td>
-            <td class="hidden break-words px-4 py-4 text-sm text-ink-soft xl:table-cell">
+            <td class="hidden break-words px-3 py-4 text-sm text-ink-soft xl:table-cell xl:px-4">
               {{ item.doctor_name ?? 'Unknown' }}
             </td>
           </tr>
