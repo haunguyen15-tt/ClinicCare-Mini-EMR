@@ -38,7 +38,8 @@
     @apply bg-accent/20 text-ink;
   }
 
-  :focus-visible {
+  /* Not on tabindex="-1" targets, which only take focus from code or a skip link. */
+  :focus-visible:not([tabindex='-1']) {
     @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-paper;
   }
 
@@ -109,6 +110,15 @@
   /* ICD-10 code, set like a rubber stamp. */
   .code-stamp {
     @apply inline-flex items-center rounded-[3px] border border-ink/70 px-1.5 py-0.5 font-mono text-xs font-medium tracking-wide text-ink;
+  }
+
+  /* Empty states: a short display-font line, then a sentence of explanation. */
+  .empty-title {
+    @apply font-display text-[1.75rem] leading-tight;
+  }
+
+  .empty-lead {
+    @apply max-w-sm text-[0.9375rem] leading-relaxed text-ink-soft;
   }
 
   .form-label {

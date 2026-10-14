@@ -1,6 +1,6 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'auth', guest: true })
-useHead({ title: 'Sign in · ClinicCare' })
+useHead({ title: 'Sign in' })
 
 const { login } = useAuth()
 const route = useRoute()
@@ -48,7 +48,7 @@ async function onSubmit() {
       <p class="mt-3 text-[0.9375rem] leading-relaxed text-ink-soft">Use your doctor account to open the consultation records.</p>
     </div>
 
-    <ErrorAlert :message="serverError" title="Sign-in failed" />
+    <AppAlert :message="serverError" title="Sign-in failed" />
 
     <form class="space-y-7" novalidate @submit.prevent="onSubmit">
       <div>
@@ -91,14 +91,7 @@ async function onSubmit() {
         <p v-if="errors.password" id="password-error" class="form-error">{{ errors.password }}</p>
       </div>
 
-      <button type="submit" class="btn-primary group w-full justify-between" :disabled="submitting">
-        {{ submitting ? 'Signing in…' : 'Sign in' }}
-        <svg v-if="submitting" class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25" />
-          <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-        </svg>
-        <span v-else class="font-mono transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
-      </button>
+      <SubmitButton class="w-full" :busy="submitting" busy-label="Signing in…">Sign in</SubmitButton>
     </form>
   </div>
 </template>

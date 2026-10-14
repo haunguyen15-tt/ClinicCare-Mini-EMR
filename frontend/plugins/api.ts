@@ -9,7 +9,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   // Expiry is enforced by the API: an expired token gets a 401 and is cleared below.
   const token = useCookie<string | null>('cc_token', { default: () => null, sameSite: 'lax' })
 
-  const api = $fetch.create({
+  const fetcher = $fetch.create({
     baseURL: config.public.apiBase,
     onRequest({ options }) {
       if (token.value) options.headers.set('Authorization', `Bearer ${token.value}`)
@@ -28,6 +28,12 @@ export default defineNuxtPlugin((nuxtApp) => {
       })
     },
   })
+
+  // Every failure comes out as a NuxtError with one shape (see toApiError). Done here rather
+  // than by throwing from onResponseError, which would skip ofetch's retry of failed GETs.
+  const api = ((request, options) => fetcher(request, options).catch((error: unknown) => {
+    throw toApiError(error)
+  })) as typeof fetcher
 
   return { provide: { api, authToken: token } }
 })

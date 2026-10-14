@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ConsultationList, ConsultationQuery } from '~/types/api'
+import type { Diagnosis } from '~/types/api'
 
-useHead({ title: 'Search · ClinicCare' })
+useHead({ title: 'Search' })
 
 type Mode = 'patient' | 'diagnosis'
 
@@ -13,28 +13,47 @@ const queryText = (value: unknown) => (typeof value === 'string' ? value.trim() 
 
 // The URL is the source of truth (`?patient=` or `?diagnosis=`, plus `?page=`), so a search
 // can be shared and survives a refresh. The inputs below write to it.
-const filters = computed<Pick<ConsultationQuery, 'patient' | 'diagnosis'> | null>(() => {
+const filters = computed<ConsultationFilters | null>(() => {
   const diagnosis = queryText(route.query.diagnosis).toUpperCase()
   if (diagnosis) return { diagnosis }
   const patient = queryText(route.query.patient)
   return patient ? { patient } : null
 })
-const page = computed(() => pageFromQuery(route.query.page))
 
-const mode = ref<Mode>(filters.value?.diagnosis ? 'diagnosis' : 'patient')
-const patientText = ref(filters.value?.patient ?? '')
-const codes = ref<string[]>(filters.value?.diagnosis ? [filters.value.diagnosis] : [])
-const typedPatient = useDebounce(() => patientText.value.trim(), 300)
+const { page, data, pending, error, refresh } = useConsultationPage('search', () => filters.value)
 
 // Replacing (not pushing) keeps typing from filling the history. A new search starts at page 1.
-function search(next: Pick<ConsultationQuery, 'patient' | 'diagnosis'>) {
+function search(next: ConsultationFilters) {
   router.replace({ query: { patient: next.patient || undefined, diagnosis: next.diagnosis || undefined } })
 }
 
-watch(typedPatient, (patient) => {
-  if (mode.value === 'patient') search({ patient })
+const mode = ref<Mode>(filters.value?.diagnosis ? 'diagnosis' : 'patient')
+
+// Diagnosis mode reads and writes the URL directly.
+const codes = computed({
+  get: () => (filters.value?.diagnosis ? [filters.value.diagnosis] : []),
+  set: ([diagnosis]: string[]) => search({ diagnosis }),
 })
-watch(codes, ([diagnosis]) => search({ diagnosis }))
+
+// Patient mode keeps a draft so typing is never interrupted; it reaches the URL 300 ms after
+// the last keystroke, and only when it differs (so the URL's page is kept otherwise).
+const patientText = ref(filters.value?.patient ?? '')
+const typedPatient = useDebounce(() => patientText.value.trim(), 300)
+watch(typedPatient, (patient) => {
+  if (mode.value === 'patient' && patient !== (filters.value?.patient ?? '')) search({ patient })
+})
+
+// The URL changed (back/forward, a nav link): follow it. Text still being typed is left alone,
+// since the URL only ever trails the debounced draft.
+watch(filters, (current) => {
+  if (current) mode.value = current.diagnosis ? 'diagnosis' : 'patient'
+  if (mode.value === 'patient' && (current?.patient ?? '') !== typedPatient.value) patientText.value = current?.patient ?? ''
+})
+
+function setMode(next: Mode) {
+  mode.value = next
+  search(next === 'patient' ? { patient: patientText.value.trim() } : {})
+}
 
 const patientInput = ref<HTMLInputElement>()
 
@@ -44,32 +63,29 @@ function clearPatient() {
   patientInput.value?.focus()
 }
 
-function setMode(next: Mode) {
-  mode.value = next
-  search(next === 'patient' ? { patient: patientText.value.trim() } : { diagnosis: codes.value[0] })
+// Typing something shaped like a code ("E1", "E11", "E11.6") also offers that prefix itself,
+// which the backend matches against every code in the group.
+const CODE_PREFIX = /^[A-Z][0-9][0-9A-Z]?(\.[0-9A-Z]{0,4})?$/
+const prefixLabel = (prefix: string) => `Any code starting with ${prefix}`
+
+function prefixOption(term: string): Diagnosis[] {
+  const code = term.toUpperCase()
+  return CODE_PREFIX.test(code) ? [{ code, description: prefixLabel(code) }] : []
 }
 
-// Back/forward or a nav link changed the URL: bring the inputs in line. Our own updates
-// already match, so text still being typed is not overwritten.
-watch(filters, (current) => {
-  if (current?.diagnosis) {
-    mode.value = 'diagnosis'
-    if (codes.value[0] !== current.diagnosis) codes.value = [current.diagnosis]
-  } else if (mode.value === 'patient' && (current?.patient ?? '') !== typedPatient.value) {
-    patientText.value = current?.patient ?? ''
-  }
-  if (!current && mode.value === 'diagnosis' && codes.value.length) codes.value = []
-})
-
-const { data, status, error, refresh } = useAsyncData(
-  'search',
-  () => filters.value
-    ? api<ConsultationList>('/consultation', {
-        query: { ...filters.value, skip: (page.value - 1) * PAGE_SIZE, limit: PAGE_SIZE },
-      })
-    : Promise.resolve(null),
-  { lazy: true, watch: [filters, page] },
+// The chip's description for the code in the URL (a refresh, back/forward): an exact code, or
+// else a prefix. The picker prefers its own description for codes picked in it.
+const { data: urlCode } = useAsyncData(
+  'search-url-code',
+  async () => {
+    const code = filters.value?.diagnosis
+    if (!code) return null
+    const [match] = await api<Diagnosis[]>('/diagnosis', { query: { search: code, limit: 1 } })
+    return { code, description: match?.code === code ? match.description : prefixLabel(code) }
+  },
+  { lazy: true, watch: [() => filters.value?.diagnosis] },
 )
+const labels = computed(() => (urlCode.value ? { [urlCode.value.code]: urlCode.value.description } : undefined))
 
 const summary = computed(() => {
   if (!filters.value || !data.value) return ''
@@ -85,13 +101,9 @@ const modes: { value: Mode; label: string }[] = [
 
 <template>
   <div class="space-y-8 sm:space-y-10">
-    <header class="max-w-2xl">
-      <p class="eyebrow reveal">Records · {{ tabNumber(2) }}</p>
-      <h1 class="page-title reveal mt-3 [--d:80ms]">Search</h1>
-      <p class="reveal mt-3 text-[0.9375rem] text-ink-soft [--d:160ms]">
-        Find consultations by patient or by <span class="whitespace-nowrap">ICD-10</span> code.
-      </p>
-    </header>
+    <PageHeader title="Search">
+      Find consultations by patient or by <span class="whitespace-nowrap">ICD-10</span> code.
+    </PageHeader>
 
     <section class="sheet sheet-margin reveal max-w-3xl py-6 pr-5 [--d:220ms] sm:py-8 sm:pr-8" aria-label="Search options">
       <fieldset>
@@ -140,9 +152,7 @@ const modes: { value: Mode; label: string }[] = [
             @click="clearPatient"
           >
             <span class="sr-only">Clear</span>
-            <svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-              <path stroke-linecap="round" d="M5 5l10 10M15 5 5 15" />
-            </svg>
+            <IconClose />
           </button>
         </div>
       </form>
@@ -153,7 +163,8 @@ const modes: { value: Mode; label: string }[] = [
           v-model="codes"
           input-id="search-diagnosis"
           :multiple="false"
-          allow-prefix
+          :extra-options="prefixOption"
+          :labels="labels"
           placeholder="A code, a prefix like E11, or a condition"
           describedby="search-diagnosis-hint"
         />
@@ -163,27 +174,25 @@ const modes: { value: Mode; label: string }[] = [
       </div>
     </section>
 
-    <!-- Results. -->
     <section v-if="filters" class="space-y-5" aria-labelledby="results-heading">
       <h2 id="results-heading" class="font-mono text-xs text-ink-soft" aria-live="polite">
         <template v-if="summary">{{ summary }}</template>
         <template v-else>Searching…</template>
       </h2>
 
-      <div v-if="error" class="space-y-3">
-        <ErrorAlert :message="getErrorMessage(error)" title="Search failed" />
-        <button type="button" class="btn-quiet -ml-3" @click="refresh()">Try again</button>
-      </div>
+      <AppAlert v-if="error" :message="getErrorMessage(error)" title="Search failed">
+        <button type="button" class="btn-quiet" @click="refresh()">Try again</button>
+      </AppAlert>
 
       <template v-else>
         <ConsultationTable
           :consultations="data?.items ?? []"
-          :loading="status === 'pending'"
+          :loading="pending"
           caption="Search results"
         >
           <template #empty>
-            <p class="font-display text-[1.75rem] leading-tight">No matches.</p>
-            <p class="max-w-sm text-[0.9375rem] leading-relaxed text-ink-soft">
+            <p class="empty-title">No matches.</p>
+            <p class="empty-lead">
               <template v-if="filters.diagnosis">No consultation has a code starting with {{ filters.diagnosis }}.</template>
               <template v-else>No patient name contains “{{ filters.patient }}”.</template>
             </p>

@@ -28,7 +28,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
-      title: 'ClinicCare Mini EMR',
+      // Page titles go through the titleTemplate in app.vue.
       meta: [
         // viewport-fit=cover lets the layout pad for notches with env(safe-area-inset-*).
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },

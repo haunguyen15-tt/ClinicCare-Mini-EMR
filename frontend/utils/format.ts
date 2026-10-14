@@ -1,7 +1,12 @@
 // Calendar dates (`YYYY-MM-DD`) have no time zone, so they are formatted in UTC: the
 // server and the browser then render the same text. Timestamps use <NuxtTime> instead,
 // which shows them in the browser's time zone without a hydration mismatch.
-const dateFormat = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })
+export const LOCALE = 'en-GB'
+/** "07 Mar 1980": shared by formatDate and the <NuxtTime> dates. */
+export const DATE_PARTS = { day: '2-digit', month: 'short', year: 'numeric' } as const
+export const TIME_PARTS = { hour: '2-digit', minute: '2-digit' } as const
+
+const dateFormat = new Intl.DateTimeFormat(LOCALE, { ...DATE_PARTS, timeZone: 'UTC' })
 
 /** '1980-03-07' -> '07 Mar 1980'. */
 export function formatDate(isoDate: string): string {
@@ -17,5 +22,5 @@ export function ageFrom(isoDate: string, today: Date = new Date()): number {
 
 /** (1, 'note') -> '1 note'; (1200, 'note') -> '1,200 notes'. */
 export function plural(count: number, noun: string): string {
-  return `${count.toLocaleString('en-GB')} ${noun}${count === 1 ? '' : 's'}`
+  return `${count.toLocaleString(LOCALE)} ${noun}${count === 1 ? '' : 's'}`
 }

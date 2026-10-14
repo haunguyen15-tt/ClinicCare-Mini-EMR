@@ -5,8 +5,30 @@ const NETWORK_MESSAGE = 'Cannot reach the server. Check your connection and try 
 const SERVER_MESSAGE = 'Something went wrong on the server. Please try again.'
 const FALLBACK_MESSAGE = 'Something went wrong. Please try again.'
 
+/** What every failed API call carries in `NuxtError.data`; see `toApiError`. */
+export interface ApiErrorData {
+  detail?: ApiErrorBody['detail']
+  /** No response came back (server down, offline, aborted). */
+  network?: true
+}
+
 function isFetchError(error: unknown): error is FetchError<Partial<ApiErrorBody> | undefined> {
   return error instanceof Error && error.name === 'FetchError'
+}
+
+/**
+ * Turns a failed $fetch call into a NuxtError (used by plugins/api.ts for every request).
+ * useAsyncData keeps a NuxtError as it is, and it survives the SSR payload, whereas a raw
+ * FetchError gets re-wrapped there with its status lost.
+ */
+export function toApiError(error: unknown): unknown {
+  if (!isFetchError(error)) return error
+  if (error.statusCode === undefined) return createError({ message: error.message, data: { network: true } })
+  return createError({
+    statusCode: error.statusCode,
+    statusMessage: error.statusMessage,
+    data: { detail: error.data?.detail },
+  })
 }
 
 interface ErrorInfo {
@@ -15,14 +37,10 @@ interface ErrorInfo {
   detail: ApiErrorBody['detail'] | undefined
 }
 
-// A failed $fetch call, thrown directly or wrapped in a NuxtError by useAsyncData. The wrapper
-// keeps the response status and body but drops the FetchError, and its status defaults to 500.
-// Every backend error has a JSON body, so a wrapper without one means no response came back.
 function infoOf(error: unknown): ErrorInfo | undefined {
-  if (isFetchError(error)) return { status: error.statusCode, detail: error.data?.detail }
-  if (!isNuxtError<Partial<ApiErrorBody> | undefined>(error)) return undefined
-  if (error.data === undefined) return { status: undefined, detail: undefined }
-  return { status: error.statusCode, detail: error.data.detail }
+  if (!isNuxtError<ApiErrorData | undefined>(error)) return undefined
+  if (error.data?.network) return { status: undefined, detail: undefined }
+  return { status: error.statusCode, detail: error.data?.detail }
 }
 
 // Pydantic prefixes messages from custom validators with "Value error, ".
@@ -38,11 +56,6 @@ function fieldOf(item: ValidationErrorItem): string {
 function humanize(field: string): string {
   const words = field.replace(/_/g, ' ')
   return words.charAt(0).toUpperCase() + words.slice(1)
-}
-
-/** HTTP status of a failed request, or undefined when no response came back. */
-export function getErrorStatus(error: unknown): number | undefined {
-  return infoOf(error)?.status
 }
 
 /** A message that can be shown to the user as is. */

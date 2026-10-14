@@ -13,14 +13,14 @@ withDefaults(
     /** A consultation to mark, e.g. the one just saved. */
     highlightId?: number
   }>(),
-  { loading: false, caption: 'Consultations', highlightId: undefined },
+  { caption: 'Consultations' },
 )
 
 // Record number printed in the margin: 7 -> "007".
 const recordNo = (id: number) => String(id).padStart(3, '0')
 
-const dateProps = { locale: 'en-GB', day: '2-digit', month: 'short', year: 'numeric' } as const
-const timeProps = { locale: 'en-GB', hour: '2-digit', minute: '2-digit' } as const
+const dateProps = { locale: LOCALE, ...DATE_PARTS }
+const timeProps = { locale: LOCALE, ...TIME_PARTS }
 </script>
 
 <template>
@@ -43,8 +43,8 @@ const timeProps = { locale: 'en-GB', hour: '2-digit', minute: '2-digit' } as con
     class="sheet sheet-margin flex flex-col items-start gap-1 py-10 pr-6 sm:py-12"
   >
     <slot name="empty">
-      <p class="font-display text-[1.75rem] leading-tight">Nothing on file.</p>
-      <p class="text-[0.9375rem] text-ink-soft">No consultations to show.</p>
+      <p class="empty-title">Nothing on file.</p>
+      <p class="empty-lead">No consultations to show.</p>
     </slot>
   </div>
 
