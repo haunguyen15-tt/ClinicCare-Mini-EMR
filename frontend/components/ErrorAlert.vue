@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = withDefaults(
+withDefaults(
   defineProps<{
     message?: string | null
     title?: string
@@ -13,7 +13,7 @@ defineEmits<{ dismiss: [] }>()
 
 <template>
   <div
-    v-if="props.message"
+    v-if="message"
     role="alert"
     class="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 sm:p-4"
   >
@@ -25,12 +25,12 @@ defineEmits<{ dismiss: [] }>()
       />
     </svg>
     <div class="min-w-0 flex-1">
-      <p class="font-medium">{{ props.title }}</p>
+      <p class="font-medium">{{ title }}</p>
       <!-- 422 messages come one per line. -->
-      <p class="mt-1 whitespace-pre-line break-words">{{ props.message }}</p>
+      <p class="mt-1 whitespace-pre-line break-words">{{ message }}</p>
     </div>
     <button
-      v-if="props.dismissible"
+      v-if="dismissible"
       type="button"
       class="-m-2 grid size-11 shrink-0 place-items-center rounded-md text-red-600 hover:bg-red-100"
       @click="$emit('dismiss')"

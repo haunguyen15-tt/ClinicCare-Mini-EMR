@@ -7,16 +7,12 @@ export default defineNuxtPlugin((nuxtApp) => {
   const api = $fetch.create({
     baseURL: config.public.apiBase,
     onRequest({ options }) {
-      if (token.value) {
-        options.headers = new Headers(options.headers)
-        options.headers.set('Authorization', `Bearer ${token.value}`)
-      }
+      if (token.value) options.headers.set('Authorization', `Bearer ${token.value}`)
     },
     async onResponseError({ response, options }) {
       // A 401 on a request that carried a token means the session expired: drop it and go to login.
       // A 401 without a token (e.g. wrong password on the login form) is left to the caller.
-      const sentToken = new Headers(options.headers).has('Authorization')
-      if (response.status !== 401 || !sentToken) return
+      if (response.status !== 401 || !options.headers.has('Authorization')) return
 
       token.value = null
       await nuxtApp.runWithContext(() => {

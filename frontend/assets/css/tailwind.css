@@ -3,14 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  html {
-    /* Stop iOS from inflating text in landscape. */
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-  }
-
   body {
-    @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
   }
 }
 
