@@ -62,7 +62,7 @@ export default defineConfig({
       stderr: 'pipe',
       env: {
         PORT: String(WEB_PORT),
-        NUXT_PUBLIC_API_BASE: API_URL,
+        NUXT_API_BASE: API_URL,
       },
     },
   ],

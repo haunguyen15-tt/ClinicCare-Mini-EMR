@@ -1,23 +1,20 @@
-// One $fetch instance for the backend: base URL, Bearer token and 401 handling.
-// It lives in a plugin so the 401 redirect can run inside the Nuxt app context.
+// One $fetch instance for the API, through this app's own server routes (server/api): the
+// server keeps the access token in an HttpOnly cookie and adds it to every call it forwards,
+// so the token never reaches page scripts. The plugin handles 401s inside the Nuxt app context.
 export default defineNuxtPlugin((nuxtApp) => {
-  const config = useRuntimeConfig()
-
-  // The access token, kept in a cookie so it is available during SSR and survives a refresh.
-  // Created once per app and shared through useAuthToken(): separate useCookie refs with the
-  // same name only sync asynchronously, so a freshly set token could miss the next request.
-  // Expiry is enforced by the API: an expired token gets a 401 and is cleared below.
-  const token = useCookie<string | null>('cc_token', { default: () => null, sameSite: 'lax' })
+  // During SSR the call goes straight to the server route, without the browser, so it has to
+  // carry the page request's cookie itself.
+  const cookie = import.meta.server ? useRequestHeaders(['cookie']).cookie : undefined
 
   const fetcher = $fetch.create({
-    baseURL: config.public.apiBase,
+    baseURL: '/api',
     onRequest({ options }) {
-      if (token.value) options.headers.set('Authorization', `Bearer ${token.value}`)
+      if (cookie) options.headers.set('cookie', cookie)
     },
-    async onResponseError({ response, options }) {
-      // A 401 on a request that carried a token means the session expired: drop it and go to login.
-      // A 401 without a token (e.g. wrong password on the login form) is left to the caller.
-      if (response.status !== 401 || !options.headers.has('Authorization')) return
+    async onResponseError({ request, response }) {
+      // A 401 means there is no valid session (none yet, or it expired): forget the doctor and
+      // go to login. A 401 from the login form itself (wrong password) is left to the form.
+      if (response.status !== 401 || request === '/auth/login') return
 
       // While route middleware runs (e.g. its /auth/me check), navigateTo only returns the
       // location and the middleware does the redirect itself, so this never double-navigates.
@@ -35,5 +32,5 @@ export default defineNuxtPlugin((nuxtApp) => {
     throw toApiError(error)
   })) as typeof fetcher
 
-  return { provide: { api, authToken: token } }
+  return { provide: { api } }
 })

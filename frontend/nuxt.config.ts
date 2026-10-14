@@ -18,11 +18,12 @@ export default defineNuxtConfig({
     strict: true,
   },
 
+  // Server-only: the browser talks to this app's server routes (server/api), never to FastAPI.
   runtimeConfig: {
-    public: {
-      // Overridden at runtime by NUXT_PUBLIC_API_BASE.
-      apiBase: 'http://localhost:8000',
-    },
+    // FastAPI's URL as the Nuxt server sees it. Overridden at runtime by NUXT_API_BASE.
+    apiBase: 'http://localhost:8000',
+    // `Secure` on the token cookie; turn on (NUXT_COOKIE_SECURE=true) when served over HTTPS.
+    cookieSecure: false,
   },
 
   // `npm run build:e2e` (the e2e and Lighthouse runs) builds into its own folders, so it

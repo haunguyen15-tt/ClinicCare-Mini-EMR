@@ -72,6 +72,43 @@ test.describe('signed in', () => {
     await expect(page).toHaveURL('/')
   })
 
+  test('keeps the token in an HttpOnly cookie that page scripts cannot read', async ({ page, app, context }) => {
+    await app.signIn('/')
+
+    const cookie = (await context.cookies()).find((candidate) => candidate.name === 'cc_token')
+    expect(cookie?.httpOnly).toBe(true)
+    expect(cookie?.sameSite).toBe('Lax')
+    expect(await page.evaluate(() => document.cookie)).not.toContain('cc_token')
+    // The browser only talks to this app's /api routes, never to FastAPI directly.
+    const calls: string[] = []
+    page.on('request', (request) => calls.push(new URL(request.url()).origin))
+    // A client-side navigation, so the list is fetched from the browser.
+    await Promise.all([
+      page.waitForResponse((response) => new URL(response.url()).pathname === '/api/consultation'),
+      app.navigate('Consultations'),
+    ])
+    expect(new Set(calls)).toEqual(new Set([new URL(page.url()).origin]))
+  })
+
+  test('the API proxy refuses other sites and unknown paths', async ({ page, app }) => {
+    await app.signIn('/')
+    const api = page.request
+
+    // A cross-site form post riding the session cookie.
+    const crossSite = await api.post('/api/consultation', {
+      headers: { origin: 'https://evil.example' },
+      data: { patient_name: 'Nobody', notes: 'x', diagnosis_codes: ['E11.9'] },
+    })
+    expect(crossSite.status()).toBe(403)
+    expect((await api.post('/api/auth/logout', { headers: { origin: 'https://evil.example' } })).status()).toBe(403)
+
+    // Only the API's own routes are forwarded: nothing else, no path tricks.
+    for (const path of ['/api/health', '/api/docs', '/api/consultation/..%2Fauth%2Flogin', '/api/consultation/abc']) {
+      expect((await api.get(path)).status(), path).toBe(404)
+    }
+    expect((await api.get('/api/consultation')).status()).toBe(200)
+  })
+
   test('logging out returns to /login and protected pages stay closed', async ({ page, app, context }) => {
     await app.signIn('/consultations')
 
