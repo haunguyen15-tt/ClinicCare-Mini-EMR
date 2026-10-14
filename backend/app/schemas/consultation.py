@@ -59,6 +59,7 @@ class ConsultationRead(BaseModel):
     notes: str
     consultation_date: datetime
     doctor_id: int | None
+    doctor_name: str | None
     created_at: datetime
     diagnoses: list[DiagnosisRead]
 

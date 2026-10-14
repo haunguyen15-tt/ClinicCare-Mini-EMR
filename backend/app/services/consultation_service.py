@@ -4,12 +4,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import BadRequestError, NotFoundError
-from app.models import Consultation, DiagnosisCode
+from app.models import Consultation, DiagnosisCode, Doctor
 from app.schemas.consultation import ConsultationCreate
 
 
-def create_consultation(db: Session, data: ConsultationCreate) -> Consultation:
-    """Save a consultation note linked to existing diagnosis codes."""
+def create_consultation(db: Session, data: ConsultationCreate, doctor: Doctor) -> Consultation:
+    """Save a consultation note by ``doctor``, linked to existing diagnosis codes."""
     diagnoses = db.scalars(
         select(DiagnosisCode)
         .where(DiagnosisCode.code.in_(data.diagnosis_codes))
@@ -24,6 +24,7 @@ def create_consultation(db: Session, data: ConsultationCreate) -> Consultation:
         patient_dob=data.patient_dob,
         notes=data.notes,
         diagnoses=list(diagnoses),
+        doctor=doctor,
     )
     db.add(consultation)
     db.commit()

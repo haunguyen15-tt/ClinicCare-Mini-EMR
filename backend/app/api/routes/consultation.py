@@ -1,18 +1,29 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import CodePrefix, DbSession, PageLimit, SearchText
+from app.api.deps import (
+    CodePrefix,
+    CurrentDoctor,
+    DbSession,
+    PageLimit,
+    SearchText,
+    get_current_doctor,
+)
 from app.models import Consultation
 from app.schemas.consultation import ConsultationCreate, ConsultationList, ConsultationRead
 from app.services import consultation_service
 
-router = APIRouter(prefix="/consultation", tags=["consultation"])
+router = APIRouter(
+    prefix="/consultation", tags=["consultation"], dependencies=[Depends(get_current_doctor)]
+)
 
 
 @router.post("", response_model=ConsultationRead, status_code=status.HTTP_201_CREATED)
-def create_consultation(data: ConsultationCreate, db: DbSession) -> Consultation:
-    return consultation_service.create_consultation(db, data)
+def create_consultation(
+    data: ConsultationCreate, db: DbSession, doctor: CurrentDoctor
+) -> Consultation:
+    return consultation_service.create_consultation(db, data, doctor)
 
 
 @router.get("")

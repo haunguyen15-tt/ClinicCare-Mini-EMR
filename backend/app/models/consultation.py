@@ -43,10 +43,14 @@ class Consultation(Base):
     )
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
-    doctor: Mapped[Doctor | None] = relationship(back_populates="consultations")
+    doctor: Mapped[Doctor | None] = relationship(back_populates="consultations", lazy="joined")
     diagnoses: Mapped[list[DiagnosisCode]] = relationship(
         secondary=consultation_diagnoses, order_by="DiagnosisCode.code", lazy="selectin"
     )
+
+    @property
+    def doctor_name(self) -> str | None:
+        return self.doctor.full_name if self.doctor else None
 
     def __repr__(self) -> str:
         return f"Consultation(id={self.id!r}, patient={self.patient_name!r})"
