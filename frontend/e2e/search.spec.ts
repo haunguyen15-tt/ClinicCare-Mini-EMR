@@ -72,6 +72,31 @@ test('searches by an exact diagnosis code picked from the list', async ({ page, 
   for (const record of await records.all()) await expect(record).toContainText('E11.65')
 })
 
+test('the open diagnosis list sits above the content below the search box', async ({ page, app }) => {
+  await app.signIn('/search')
+  await app.press(page.getByText('Diagnosis code', { exact: true }))
+  // The page's entrance animations have played (the bug showed once they had settled).
+  await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState === 'finished'))
+
+  await codeBox(page).fill('ab')
+  await expect(app.option('E11.9')).toBeVisible()
+
+  // The list hangs over the "Results show here as you type." hint; the list must win.
+  const hit = await page.evaluate(() => {
+    const list = document.querySelector('[role=listbox]')!.getBoundingClientRect()
+    const hint = [...document.querySelectorAll('p')].find((p) => p.textContent?.includes('Results show here'))!
+    const box = hint.getBoundingClientRect()
+    const left = Math.max(list.left, box.left)
+    const right = Math.min(list.right, box.right)
+    const top = Math.max(list.top, box.top)
+    const bottom = Math.min(list.bottom, box.bottom)
+    if (left >= right || top >= bottom) return 'no overlap'
+    const element = document.elementFromPoint((left + right) / 2, (top + bottom) / 2)
+    return element?.closest('[role=listbox]') ? 'list' : 'hint'
+  })
+  expect(hit).toBe('list')
+})
+
 test('searches by a code prefix such as E11, and keeps it after a refresh', async ({ page, app, backend }) => {
   await app.signIn('/search')
   await app.press(page.getByText('Diagnosis code', { exact: true }))

@@ -46,7 +46,10 @@ export default {
         },
       },
       animation: {
-        rise: 'rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
+        // `backwards`, not `both`: the end state equals the element's own style, and an
+        // opacity animation that stays filled keeps a stacking context, which would trap a
+        // dropdown (the DiagnosisPicker list) under the next revealed block.
+        rise: 'rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards',
         'draw-rule': 'draw-rule 0.9s cubic-bezier(0.65, 0, 0.35, 1) both',
       },
     },
