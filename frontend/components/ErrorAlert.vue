@@ -18,7 +18,7 @@ defineEmits<{ dismiss: [] }>()
     class="reveal flex items-start gap-3 border-l-2 border-danger bg-danger-soft/70 py-3 pl-4 pr-3 text-sm text-ink"
   >
     <div class="min-w-0 flex-1">
-      <p class="eyebrow !text-danger">{{ title }}</p>
+      <p class="eyebrow text-danger">{{ title }}</p>
       <!-- 422 messages come one per line. -->
       <p class="mt-1 whitespace-pre-line break-words leading-relaxed">{{ message }}</p>
     </div>

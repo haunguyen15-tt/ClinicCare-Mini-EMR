@@ -19,9 +19,11 @@ export default defineNuxtPlugin((nuxtApp) => {
       // A 401 without a token (e.g. wrong password on the login form) is left to the caller.
       if (response.status !== 401 || !options.headers.has('Authorization')) return
 
+      // While route middleware runs (e.g. its /auth/me check), navigateTo only returns the
+      // location and the middleware does the redirect itself, so this never double-navigates.
       await nuxtApp.runWithContext(() => {
         useAuth().clearSession()
-        const route = useRoute()
+        const route = useRouter().currentRoute.value
         if (!route.meta.guest) return navigateTo(loginRoute(route.fullPath))
       })
     },

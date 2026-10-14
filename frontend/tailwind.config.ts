@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss'
 import defaultTheme from 'tailwindcss/defaultTheme'
+import plugin from 'tailwindcss/plugin'
 
 // "Clinical chart" design system in a scrubs-and-sage palette: cool-white chart paper,
 // surgical-green ink and an emerald margin rule. Colors are CSS variables
@@ -12,10 +13,6 @@ const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`
 export default {
   theme: {
     extend: {
-      screens: {
-        // Phones held sideways: wide enough for `sm`/`md` but only ~350-450px tall.
-        short: { raw: '(orientation: landscape) and (max-height: 500px)' },
-      },
       colors: {
         paper: { DEFAULT: token('paper'), deep: token('paper-deep') },
         card: token('card'),
@@ -23,7 +20,6 @@ export default {
         ink: { DEFAULT: token('ink'), soft: token('ink-soft'), faint: token('ink-faint') },
         pine: { DEFAULT: token('pine'), deep: token('pine-deep') },
         accent: { DEFAULT: token('accent'), soft: token('accent-soft') },
-        mint: token('mint'),
         danger: { DEFAULT: token('danger'), soft: token('danger-soft') },
       },
       fontFamily: {
@@ -38,13 +34,15 @@ export default {
         sheet: '0 1px 0 rgb(var(--rule) / 0.9), 0 12px 32px -18px rgb(var(--ink) / 0.35)',
       },
       keyframes: {
+        // Individual `translate`/`scale` properties, not `transform`: the animation then
+        // composes with Tailwind's rotate/translate utilities instead of overriding them.
         rise: {
-          from: { opacity: '0', transform: 'translateY(10px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+          from: { opacity: '0', translate: '0 10px' },
+          to: { opacity: '1', translate: 'none' },
         },
         'draw-rule': {
-          from: { transform: 'scaleY(0)' },
-          to: { transform: 'scaleY(1)' },
+          from: { scale: '1 0' },
+          to: { scale: '1 1' },
         },
       },
       animation: {
@@ -53,4 +51,12 @@ export default {
       },
     },
   },
+  plugins: [
+    // `short:` for phones held sideways: wide enough for `sm`/`md` but only ~350-450px tall.
+    // A variant rather than a raw `screens` entry, which would disable `max-*`/`min-[...]` screens.
+    // Tailwind emits it before the screen variants, so `:root` gives it the specificity to win.
+    plugin(({ addVariant }) => {
+      addVariant('short', '@media (orientation: landscape) and (max-height: 500px) { :root & }')
+    }),
+  ],
 } satisfies Partial<Config>
