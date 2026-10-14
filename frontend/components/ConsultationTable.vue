@@ -10,8 +10,10 @@ withDefaults(
     loading?: boolean
     /** Accessible name for the table. */
     caption?: string
+    /** A consultation to mark, e.g. the one just saved. */
+    highlightId?: number
   }>(),
-  { loading: false, caption: 'Consultations' },
+  { loading: false, caption: 'Consultations', highlightId: undefined },
 )
 
 // Record number printed in the margin: 7 -> "007".
@@ -49,7 +51,12 @@ const timeProps = { locale: 'en-GB', hour: '2-digit', minute: '2-digit' } as con
   <div v-else class="transition-opacity" :class="loading && 'pointer-events-none opacity-50'" :aria-busy="loading">
     <!-- Phones: one chart card per consultation. -->
     <ul class="space-y-4 md:hidden" :aria-label="caption">
-      <li v-for="item in consultations" :key="item.id" class="sheet sheet-margin py-4 pr-4 [--margin:1.25rem] [--margin-gap:1rem]">
+      <li
+        v-for="item in consultations"
+        :key="item.id"
+        class="sheet sheet-margin py-4 pr-4 [--margin:1.25rem] [--margin-gap:1rem]"
+        :class="item.id === highlightId && 'ring-2 ring-accent'"
+      >
         <div class="flex items-baseline justify-between gap-3 font-mono text-xs">
           <span class="text-ink-soft">
             <NuxtTime :datetime="item.consultation_date" v-bind="dateProps" />
@@ -97,7 +104,8 @@ const timeProps = { locale: 'en-GB', hour: '2-digit', minute: '2-digit' } as con
           <tr
             v-for="item in consultations"
             :key="item.id"
-            class="border-b border-rule align-top transition-colors last:border-0 hover:bg-paper/70"
+            class="border-b border-rule align-top transition-colors last:border-0"
+            :class="item.id === highlightId ? 'bg-accent-soft/60' : 'hover:bg-paper/70'"
           >
             <td class="border-r border-accent/50 py-4 pr-3 text-right font-mono text-xs text-ink-faint">
               {{ recordNo(item.id) }}

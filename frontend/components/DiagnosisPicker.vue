@@ -23,7 +23,7 @@ const props = withDefaults(
     inputId: undefined,
     invalid: false,
     describedby: undefined,
-    placeholder: 'Code or condition, e.g. E11 or asthma',
+    placeholder: 'e.g. E11 or asthma',
   },
 )
 
