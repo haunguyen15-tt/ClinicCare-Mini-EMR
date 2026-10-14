@@ -1,0 +1,33 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "ignorePaths": [
+    "**/.venv/**",
+    "**/node_modules/**",
+    "**/.nuxt/**",
+    "**/.output/**",
+    "backend/sql/**"
+  ],
+  "words": [
+    "addopts",
+    "autoflush",
+    "cliniccare",
+    "executescript",
+    "fastapi",
+    "htmlcov",
+    "httpx",
+    "jsonable",
+    "mypy",
+    "nuxt",
+    "ondelete",
+    "pycache",
+    "pydantic",
+    "pyjwt",
+    "pytest",
+    "sessionmaker",
+    "sqlalchemy",
+    "testpaths",
+    "uvicorn",
+    "venv"
+  ]
+}
